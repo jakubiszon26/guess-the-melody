@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const spotifyApiUrl = "https://api.spotify.com/v1";
+const apiurl = "http://127.0.0.1:3001";
 
 export const fetchUserProfile = async (token) => {
   if (!token) {
@@ -8,10 +8,8 @@ export const fetchUserProfile = async (token) => {
   }
 
   try {
-    const response = await axios.get(spotifyApiUrl + "/me", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+    const response = await axios.get(apiurl + "/me", {
+      withCredentials: true,
     });
     console.log(response.data);
     return response.data;

@@ -1,9 +1,10 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 const SpotifyAuth = (props) => {
   const spotifyendpoint = "https://accounts.spotify.com/authorize";
   const redirecturi = "http://127.0.0.1:3000/";
   const clientid = "918689905d6d43f1970fd741950e8d3f";
+  const { setToken } = props;
 
   const scopes = [
     "user-read-playback-state",
@@ -14,16 +15,21 @@ const SpotifyAuth = (props) => {
     "%20"
   )}&response_type=code&show_dialog=true`;
 
-  const requestToken = (code) => {
-    console.log("Authorization code:", code);
-    axios
-      .get("http://127.0.0.1:3001/getToken", { params: { code } })
-      .then((response) => {
-        props.setToken(response.data.access_token);
-      });
-  };
-
   useEffect(() => {
+    const requestToken = (code) => {
+      console.log("Authorization code:", code);
+      axios
+        .get("http://127.0.0.1:3001/getToken", {
+          params: { code },
+          withCredentials: true,
+        })
+        .then((response) => {
+          console.log(response.data);
+          if (response.data.login === "success") {
+            setToken(true);
+          }
+        });
+    };
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
     if (code) {
@@ -32,7 +38,7 @@ const SpotifyAuth = (props) => {
     } else {
       return;
     }
-  }, []);
+  }, [setToken]);
 
   return (
     <div>

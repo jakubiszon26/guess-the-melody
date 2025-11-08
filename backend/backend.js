@@ -1,10 +1,13 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import fastifyCookie from "@fastify/cookie";
 import axios from "axios";
 import "dotenv/config";
 const fastify = Fastify({ logger: true });
+await fastify.register(fastifyCookie);
 fastify.register(cors, {
   origin: "http://127.0.0.1:3000",
+  credentials: true,
 });
 
 const tokenurl = "https://accounts.spotify.com/api/token";
@@ -34,8 +37,16 @@ fastify.get("/getToken", function (request, reply) {
       })
       .then((response) => {
         console.log("Token response:", response.data);
-        reply.send(response.data);
-        console.log("Access token sent to client", response.data.access_token);
+        const { access_token, expires_in } = response.data;
+        reply.setCookie("access_token", access_token, {
+          path: "/",
+          httpOnly: true,
+          secure: false,
+          sameSite: "lax",
+          maxAge: expires_in * 1000,
+          domain: "127.0.0.1",
+        });
+        reply.send({ login: "success" });
       })
       .catch((error) => {
         console.error("Token request error:", error.response.data);
@@ -44,6 +55,25 @@ fastify.get("/getToken", function (request, reply) {
   } else {
     console.log("No code received");
     reply.status(400).send({ error: "No code provided" });
+  }
+});
+
+fastify.get("/me", async function (request, reply) {
+  const token = request.cookies.access_token;
+  if (!token) {
+    return reply.status(401).send({ error: "Unauthorized" });
+  }
+
+  try {
+    const response = await axios.get("https://api.spotify.com/v1/me", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    reply.send(response.data);
+  } catch (error) {
+    console.error("Error fetching user data", error);
+    reply.status(500).send({ error: "Failed to fetch user data" });
   }
 });
 

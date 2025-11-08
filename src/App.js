@@ -1,10 +1,10 @@
-import logo from "./logo.svg";
 import "./App.css";
 import SpotifyAuth from "./components/SpotifyAuth";
 import { useEffect, useState } from "react";
 import { fetchUserProfile } from "./api/spotifyApi";
 function App() {
-  const [token, setToken] = useState(null);
+  //only true/false for whether user is logged in. Authentication via cookie
+  const [token, setToken] = useState(false);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
