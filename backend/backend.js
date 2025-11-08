@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import axios from "axios";
+import "dotenv/config";
 const fastify = Fastify({ logger: true });
 fastify.register(cors, {
   origin: "http://127.0.0.1:3000",

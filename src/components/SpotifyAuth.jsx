@@ -1,6 +1,6 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
-const SpotifyAuth = () => {
+const SpotifyAuth = (props) => {
   const spotifyendpoint = "https://accounts.spotify.com/authorize";
   const redirecturi = "http://127.0.0.1:3000/";
   const clientid = "918689905d6d43f1970fd741950e8d3f";
@@ -14,14 +14,12 @@ const SpotifyAuth = () => {
     "%20"
   )}&response_type=code&show_dialog=true`;
 
-  const [token, setToken] = useState(null);
   const requestToken = (code) => {
     console.log("Authorization code:", code);
     axios
       .get("http://127.0.0.1:3001/getToken", { params: { code } })
       .then((response) => {
-        setToken(response.data.access_token);
-        console.log("Access Token:", response.data.access_token);
+        props.setToken(response.data.access_token);
       });
   };
 
@@ -39,7 +37,6 @@ const SpotifyAuth = () => {
   return (
     <div>
       <a href={loginurl}>Login to Spotify</a>
-      <h1>{token ? token : "No token found"}</h1>
     </div>
   );
 };
