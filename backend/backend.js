@@ -77,6 +77,15 @@ fastify.get("/me", async function (request, reply) {
   }
 });
 
+fastify.get("/checkAuth", async (request, reply) => {
+  const token = request.cookies.access_token;
+  if (token) {
+    reply.send({ authenticated: true });
+  } else {
+    reply.send({ authenticated: false });
+  }
+});
+
 fastify.listen({ port: 3001 }, (err, address) => {
   if (err) {
     console.error(err);

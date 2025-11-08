@@ -18,3 +18,15 @@ export const fetchUserProfile = async (token) => {
     return null;
   }
 };
+
+export const checkAuth = async () => {
+  try {
+    const response = await axios.get(apiurl + "/checkAuth", {
+      withCredentials: true,
+    });
+    return response.data.authenticated;
+  } catch (error) {
+    console.error("Error checking authentication", error);
+    return false;
+  }
+};
