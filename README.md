@@ -1,3 +1,10 @@
+TODO:
+
+1. Store session tokens in database for a quick authentication without querying spotify api
+2. implement webplayer sdk
+3. use react router
+4. UI
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
