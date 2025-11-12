@@ -1,4 +1,3 @@
-import axios from "axios";
 import { useEffect } from "react";
 import { exchangeCodeForToken } from "../api/spotifyApi";
 const SpotifyAuth = (props) => {

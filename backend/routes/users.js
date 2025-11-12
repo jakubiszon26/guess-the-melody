@@ -1,93 +1,83 @@
 import axios from "axios";
+import {
+  checkIfUserExists,
+  databaseUpdateTokens,
+  databaseCreateUser,
+  generateInternalToken,
+  getSpotifyTokenFromDatabase,
+} from "../services/userService.js";
+import Spotify from "../services/spotifyService.js";
 
-const tokenurl = "https://accounts.spotify.com/api/token";
-const redirecturi = "http://127.0.0.1:3000/";
-const clientid = process.env.SPOTIFY_CLIENT_ID;
-const clientsecret = process.env.SPOTIFY_CLIENT_SECRET;
+const cookieSettings = {
+  path: "/",
+  httpOnly: true,
+  secure: true, // change to true when deployed
+  sameSite: "lax",
+};
 
 async function userRoutes(fastify, options) {
-  fastify.get("/fetch-user-profile", async (request, reply) => {
-    const token = request.cookies.access_token;
-    if (!token) {
-      return reply.status(401).send({ error: "Unauthorized" });
-    }
-
+  fastify.get("/getToken", async function (request, reply) {
     try {
-      const response = await axios.get("https://api.spotify.com/v1/me", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      reply.send(response.data);
-    } catch (error) {
-      console.error("Error fetching user data", error);
-      reply.status(500).send({ error: "Failed to fetch user data" });
-    }
-  });
-
-  fastify.get("/getToken", function (request, reply) {
-    console.log("Received request for /getToken");
-    const code = request.query.code;
-    if (code) {
+      console.log("Received request for /getToken");
+      const code = request.query.code;
+      if (!code) {
+        console.log("No code received");
+        return reply.status(400).send({ error: "No code provided" });
+      }
       console.log("Code received:", code);
-      const data = new URLSearchParams({
-        grant_type: "authorization_code",
-        code: code,
-        redirect_uri: redirecturi,
-      });
-      const credentials = `${clientid}:${clientsecret}`;
-      const encodedCredentials = Buffer.from(credentials).toString("base64");
-
-      axios
-        .post(tokenurl, data, {
-          headers: {
-            Authorization: `Basic ${encodedCredentials}`,
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-        })
-        .then((response) => {
-          console.log("Token response:", response.data);
-          const { access_token, expires_in } = response.data;
-          reply.setCookie("access_token", access_token, {
-            path: "/",
-            httpOnly: true,
-            secure: false,
-            sameSite: "lax",
-            maxAge: expires_in * 1000,
-            domain: "127.0.0.1",
-          });
-          reply.send({ login: "success" });
-        })
-        .catch((error) => {
-          console.error("Token request error:", error);
-          reply.status(500).send({ error: "Failed to get token" });
-        });
-    } else {
-      console.log("No code received");
-      reply.status(400).send({ error: "No code provided" });
-    }
-  });
-
-  fastify.get("/checkAuth", async (request, reply) => {
-    const token = request.cookies.access_token;
-    try {
-      const response = await axios.get("https://api.spotify.com/v1/me", {
-        headers: {
-          authorization: `Bearer ${token}`,
-        },
-      });
-      reply.send({ authenticated: true });
+      const { access_token, refresh_token, expires_in } =
+        await Spotify.getToken(code);
+      const meData = await Spotify.me(access_token);
+      const userID = meData.id;
+      const userExist = await checkIfUserExists(userID);
+      if (userExist) {
+        const updatedUser = await databaseUpdateTokens(
+          userID,
+          access_token,
+          refresh_token,
+          expires_in
+        );
+        const internalToken = await generateInternalToken(fastify, updatedUser);
+        reply.setCookie("session_token", internalToken, cookieSettings);
+      } else {
+        const newUSer = await databaseCreateUser(
+          userID,
+          access_token,
+          refresh_token,
+          expires_in
+        );
+        const internalToken = await generateInternalToken(fastify, newUSer);
+        reply.setCookie("session_token", internalToken, cookieSettings);
+      }
     } catch (error) {
-      reply.send({ authenticated: false });
+      throw new Error(error);
     }
   });
 
-  fastify.get("/getAccessToken", async (request, reply) => {
-    const token = request.cookies.access_token;
-    if (!token) {
-      return reply.status(401).send({ error: "Unauthorized" });
+  fastify.get(
+    "/checkAuth",
+    { preHandler: [fastify.authenticate] },
+    async (request, reply) => {
+      console.log("POTWIERDZONO AUTH");
+      reply.send({ authenticated: true });
     }
-    reply.send({ access_token: token });
-  });
+  );
+
+  fastify.get(
+    "/fetch-user-profile",
+    { preHandler: [fastify.authenticate] },
+    async (request, reply) => {
+      const token = await getSpotifyTokenFromDatabase(request.user.spotifyID);
+      if (token) {
+        const userData = await Spotify.me(token);
+        reply.send(userData);
+      }
+      if (!data.error) {
+        reply.send(data);
+      } else {
+        reply.status(500).send(data.error);
+      }
+    }
+  );
 }
 export default userRoutes;

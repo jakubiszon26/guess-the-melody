@@ -1,0 +1,24 @@
+"filename", "language", "JSON", "JavaScript", "HTML", "PostCSS", "JavaScript JSX", "XML", "Markdown", "comment", "blank", "total"
+"/home/jakub/guess-the-melody/README.md", "Markdown", 0, 0, 0, 0, 0, 0, 45, 0, 35, 80
+"/home/jakub/guess-the-melody/backend/backend.js", "JavaScript", 0, 23, 0, 0, 0, 0, 0, 0, 3, 26
+"/home/jakub/guess-the-melody/backend/config/db.js", "JavaScript", 0, 17, 0, 0, 0, 0, 0, 0, 4, 21
+"/home/jakub/guess-the-melody/backend/models/userModel.js", "JavaScript", 0, 29, 0, 0, 0, 0, 0, 0, 3, 32
+"/home/jakub/guess-the-melody/backend/routes/music.js", "JavaScript", 0, 63, 0, 0, 0, 0, 0, 0, 7, 70
+"/home/jakub/guess-the-melody/backend/routes/users.js", "JavaScript", 0, 103, 0, 0, 0, 0, 0, 3, 6, 112
+"/home/jakub/guess-the-melody/backend/services/spotifyService.js", "JavaScript", 0, 19, 0, 0, 0, 0, 0, 2, 2, 23
+"/home/jakub/guess-the-melody/backend/services/userService.js", "JavaScript", 0, 42, 0, 0, 0, 0, 0, 1, 6, 49
+"/home/jakub/guess-the-melody/package-lock.json", "JSON", 18910, 0, 0, 0, 0, 0, 0, 0, 1, 18911
+"/home/jakub/guess-the-melody/package.json", "JSON", 47, 0, 0, 0, 0, 0, 0, 0, 1, 48
+"/home/jakub/guess-the-melody/public/index.html", "HTML", 0, 0, 20, 0, 0, 0, 0, 23, 1, 44
+"/home/jakub/guess-the-melody/public/manifest.json", "JSON", 25, 0, 0, 0, 0, 0, 0, 0, 1, 26
+"/home/jakub/guess-the-melody/src/App.css", "PostCSS", 0, 0, 0, 33, 0, 0, 0, 0, 6, 39
+"/home/jakub/guess-the-melody/src/App.js", "JavaScript", 0, 37, 0, 0, 0, 0, 0, 1, 3, 41
+"/home/jakub/guess-the-melody/src/App.test.js", "JavaScript", 0, 7, 0, 0, 0, 0, 0, 0, 2, 9
+"/home/jakub/guess-the-melody/src/api/spotifyApi.js", "JavaScript", 0, 85, 0, 0, 0, 0, 0, 0, 8, 93
+"/home/jakub/guess-the-melody/src/components/SpotifyAuth.jsx", "JavaScript JSX", 0, 0, 0, 0, 38, 0, 0, 1, 6, 45
+"/home/jakub/guess-the-melody/src/index.css", "PostCSS", 0, 0, 0, 12, 0, 0, 0, 0, 2, 14
+"/home/jakub/guess-the-melody/src/index.js", "JavaScript", 0, 12, 0, 0, 0, 0, 0, 3, 3, 18
+"/home/jakub/guess-the-melody/src/logo.svg", "XML", 0, 0, 0, 0, 0, 1, 0, 0, 0, 1
+"/home/jakub/guess-the-melody/src/reportWebVitals.js", "JavaScript", 0, 12, 0, 0, 0, 0, 0, 0, 2, 14
+"/home/jakub/guess-the-melody/src/setupTests.js", "JavaScript", 0, 1, 0, 0, 0, 0, 0, 4, 1, 6
+"Total", "-", 18982, 450, 20, 45, 38, 1, 45, 38, 103, 19722

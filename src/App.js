@@ -17,7 +17,6 @@ function App() {
     if (token) {
       fetchUserProfile().then((data) => setUser(data));
       fetchPlayingTrack().then((data) => setPlayingTrack(data));
-      console.log(findPrieviewUrl("Diet Pepsi", "Addison Rae"));
     } else if (!token) {
       checkAuth().then((isAuth) => setToken(isAuth));
     }

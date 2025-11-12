@@ -1,0 +1,64 @@
+Date : 2025-11-11 01:13:53
+Directory : /home/jakub/guess-the-melody
+Total : 22 files,  19581 codes, 38 comments, 103 blanks, all 19722 lines
+
+Languages
++----------------+------------+------------+------------+------------+------------+
+| language       | files      | code       | comment    | blank      | total      |
++----------------+------------+------------+------------+------------+------------+
+| JSON           |          3 |     18,982 |          0 |          3 |     18,985 |
+| JavaScript     |         13 |        450 |         14 |         50 |        514 |
+| PostCSS        |          2 |         45 |          0 |          8 |         53 |
+| Markdown       |          1 |         45 |          0 |         35 |         80 |
+| JavaScript JSX |          1 |         38 |          1 |          6 |         45 |
+| HTML           |          1 |         20 |         23 |          1 |         44 |
+| XML            |          1 |          1 |          0 |          0 |          1 |
++----------------+------------+------------+------------+------------+------------+
+
+Directories
++-----------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                            | files      | code       | comment    | blank      | total      |
++-----------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                               |         22 |     19,581 |         38 |        103 |     19,722 |
+| . (Files)                                                       |          3 |     19,002 |          0 |         37 |     19,039 |
+| backend                                                         |          7 |        296 |          6 |         31 |        333 |
+| backend (Files)                                                 |          1 |         23 |          0 |          3 |         26 |
+| backend/config                                                  |          1 |         17 |          0 |          4 |         21 |
+| backend/models                                                  |          1 |         29 |          0 |          3 |         32 |
+| backend/routes                                                  |          2 |        166 |          3 |         13 |        182 |
+| backend/services                                                |          2 |         61 |          3 |          8 |         72 |
+| public                                                          |          2 |         45 |         23 |          2 |         70 |
+| src                                                             |         10 |        238 |          9 |         33 |        280 |
+| src (Files)                                                     |          8 |        115 |          8 |         19 |        142 |
+| src/api                                                         |          1 |         85 |          0 |          8 |         93 |
+| src/components                                                  |          1 |         38 |          1 |          6 |         45 |
++-----------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++-----------------------------------------------------------------+----------------+------------+------------+------------+------------+
+| filename                                                        | language       | code       | comment    | blank      | total      |
++-----------------------------------------------------------------+----------------+------------+------------+------------+------------+
+| /home/jakub/guess-the-melody/README.md                          | Markdown       |         45 |          0 |         35 |         80 |
+| /home/jakub/guess-the-melody/backend/backend.js                 | JavaScript     |         23 |          0 |          3 |         26 |
+| /home/jakub/guess-the-melody/backend/config/db.js               | JavaScript     |         17 |          0 |          4 |         21 |
+| /home/jakub/guess-the-melody/backend/models/userModel.js        | JavaScript     |         29 |          0 |          3 |         32 |
+| /home/jakub/guess-the-melody/backend/routes/music.js            | JavaScript     |         63 |          0 |          7 |         70 |
+| /home/jakub/guess-the-melody/backend/routes/users.js            | JavaScript     |        103 |          3 |          6 |        112 |
+| /home/jakub/guess-the-melody/backend/services/spotifyService.js | JavaScript     |         19 |          2 |          2 |         23 |
+| /home/jakub/guess-the-melody/backend/services/userService.js    | JavaScript     |         42 |          1 |          6 |         49 |
+| /home/jakub/guess-the-melody/package-lock.json                  | JSON           |     18,910 |          0 |          1 |     18,911 |
+| /home/jakub/guess-the-melody/package.json                       | JSON           |         47 |          0 |          1 |         48 |
+| /home/jakub/guess-the-melody/public/index.html                  | HTML           |         20 |         23 |          1 |         44 |
+| /home/jakub/guess-the-melody/public/manifest.json               | JSON           |         25 |          0 |          1 |         26 |
+| /home/jakub/guess-the-melody/src/App.css                        | PostCSS        |         33 |          0 |          6 |         39 |
+| /home/jakub/guess-the-melody/src/App.js                         | JavaScript     |         37 |          1 |          3 |         41 |
+| /home/jakub/guess-the-melody/src/App.test.js                    | JavaScript     |          7 |          0 |          2 |          9 |
+| /home/jakub/guess-the-melody/src/api/spotifyApi.js              | JavaScript     |         85 |          0 |          8 |         93 |
+| /home/jakub/guess-the-melody/src/components/SpotifyAuth.jsx     | JavaScript JSX |         38 |          1 |          6 |         45 |
+| /home/jakub/guess-the-melody/src/index.css                      | PostCSS        |         12 |          0 |          2 |         14 |
+| /home/jakub/guess-the-melody/src/index.js                       | JavaScript     |         12 |          3 |          3 |         18 |
+| /home/jakub/guess-the-melody/src/logo.svg                       | XML            |          1 |          0 |          0 |          1 |
+| /home/jakub/guess-the-melody/src/reportWebVitals.js             | JavaScript     |         12 |          0 |          2 |         14 |
+| /home/jakub/guess-the-melody/src/setupTests.js                  | JavaScript     |          1 |          4 |          1 |          6 |
+| Total                                                           |                |     19,581 |         38 |        103 |     19,722 |
++-----------------------------------------------------------------+----------------+------------+------------+------------+------------+
