@@ -118,7 +118,6 @@ async function getSpotifyTokenFromDatabase(spotifyID) {
         refreshedToken.refresh_token,
         refreshedToken.expires_in
       );
-      console.log("ZROBIONO REFRESH TOKENU");
       return refreshedToken.access_token;
     }
   } catch (error) {
