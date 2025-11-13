@@ -5,9 +5,10 @@ const redirecturi = process.env.SPOTIFY_REDIRECT_URI;
 const clientid = process.env.SPOTIFY_CLIENT_ID;
 const clientsecret = process.env.SPOTIFY_CLIENT_SECRET;
 
+const credentials = `${clientid}:${clientsecret}`;
+const encodedCredentials = Buffer.from(credentials).toString("base64");
+
 const Spotify = {
-  //fetch user profile
-  //returns data
   async me(token) {
     if (!token) {
       return null;
@@ -30,8 +31,7 @@ const Spotify = {
       code: code,
       redirect_uri: redirecturi,
     });
-    const credentials = `${clientid}:${clientsecret}`;
-    const encodedCredentials = Buffer.from(credentials).toString("base64");
+
     try {
       const response = await axios.post(tokenurl, data, {
         headers: {
@@ -43,6 +43,27 @@ const Spotify = {
       return { access_token, refresh_token, expires_in };
     } catch (error) {
       throw new Error(error);
+    }
+  },
+  async refreshToken(refreshToken) {
+    try {
+      if (refreshToken) {
+        const data = new URLSearchParams({
+          grant_type: "refresh_token",
+          refresh_token: refreshToken,
+          redirect_uri: redirecturi,
+        });
+        const response = await axios.post(tokenurl, data, {
+          headers: {
+            Authorization: `Basic ${encodedCredentials}`,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+        });
+        const { access_token, refresh_token, expires_in } = response.data;
+        return { access_token, refresh_token, expires_in };
+      }
+    } catch (error) {
+      throw error;
     }
   },
 };

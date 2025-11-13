@@ -67,7 +67,27 @@ async function databaseCreateUser(
     throw new Error(err);
   }
 }
-async function validateSpotifyToken(spotifyID) {} //nie pamietam do czego to mialo sluzyc
+async function validateSpotifyToken(spotifyID) {
+  try {
+    const userData = await User.findOne({ spotifyID: spotifyID });
+    if (userData) {
+      if (userData.spotifyTokenExpiresAt < Date.now()) {
+        return {
+          valid: false,
+          token: userData.spotifyAccessToken,
+          refreshToken: userData.spotifyRefreshToken,
+        };
+      } else {
+        return { valid: true, token: userData.spotifyAccessToken };
+      }
+    } else {
+      throw new Error("no userdata");
+    }
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
+}
 async function generateInternalToken(fastify, user) {
   if (!user.spotifyID) {
     throw Error("cannot generate token without userID");
@@ -82,14 +102,28 @@ async function generateInternalToken(fastify, user) {
     return sessionToken;
   }
 }
+
 async function getSpotifyTokenFromDatabase(spotifyID) {
   try {
-    const userData = await User.findOne({ spotifyID: spotifyID });
-    if (userData) {
-      return userData.spotifyAccessToken;
+    const spotifyToken = await validateSpotifyToken(spotifyID);
+    if (spotifyToken.valid) {
+      return spotifyToken.token;
+    } else {
+      const refreshedToken = await Spotify.refreshToken(
+        spotifyToken.refreshToken
+      );
+      databaseUpdateTokens(
+        spotifyID,
+        refreshedToken.access_token,
+        refreshedToken.refresh_token,
+        refreshedToken.expires_in
+      );
+      console.log("ZROBIONO REFRESH TOKENU");
+      return refreshedToken.access_token;
     }
   } catch (error) {
-    throw new Error(error);
+    console.error(error);
+    throw error;
   }
 }
 

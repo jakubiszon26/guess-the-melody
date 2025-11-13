@@ -31,44 +31,44 @@ export default async function musicRoutes(fastify, options) {
     }
   );
 
-//   fastify.get(
-//     "/get-track-info",
-//     { preHandler: [fastify.authenticate] },
-//     async (request, reply) => {
-//       const trackId = request.query.id;
+  //   fastify.get(
+  //     "/get-track-info",
+  //     { preHandler: [fastify.authenticate] },
+  //     async (request, reply) => {
+  //       const trackId = request.query.id;
 
-//       if (!token) {
-//         return reply.status(401).send({ error: "Unauthorized" });
-//       }
+  //       if (!token) {
+  //         return reply.status(401).send({ error: "Unauthorized" });
+  //       }
 
-//       if (!trackId) {
-//         return reply.status(400).send({ error: "Track ID is required" });
-//       }
+  //       if (!trackId) {
+  //         return reply.status(400).send({ error: "Track ID is required" });
+  //       }
 
-//       try {
-//         const response = await axios.get(
-//           `https://api.spotify.com/v1/tracks/${trackId}`,
-//           {
-//             headers: {
-//               Authorization: `Bearer ${token}`,
-//             },
-//           }
-//         );
-//         console.log("Track info response:", response.data);
-//         reply.send(response.data);
-//       } catch (error) {
-//         console.error("Error fetching track info", error);
-//         reply.status(500).send({ error: "Failed to fetch track info" });
-//       }
-//     }
-//   );
+  //       try {
+  //         const response = await axios.get(
+  //           `https://api.spotify.com/v1/tracks/${trackId}`,
+  //           {
+  //             headers: {
+  //               Authorization: `Bearer ${token}`,
+  //             },
+  //           }
+  //         );
+  //         console.log("Track info response:", response.data);
+  //         reply.send(response.data);
+  //       } catch (error) {
+  //         console.error("Error fetching track info", error);
+  //         reply.status(500).send({ error: "Failed to fetch track info" });
+  //       }
+  //     }
+  //   );
 
-//   fastify.get("/find-preview-url", async (request, reply) => {
-//     const response = await spotifyPreviewFinder(
-//       request.query.track,
-//       request.query.artist,
-//       1
-//     );
-//     console.log("HTUHAK", response[0].previewUrls[0]);
-//   });
-// }
+  //   fastify.get("/find-preview-url", async (request, reply) => {
+  //     const response = await spotifyPreviewFinder(
+  //       request.query.track,
+  //       request.query.artist,
+  //       1
+  //     );
+  //     console.log("HTUHAK", response[0].previewUrls[0]);
+  //   });
+}
