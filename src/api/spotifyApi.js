@@ -1,6 +1,11 @@
 import axios from "axios";
 
 const apiurl = "http://127.0.0.1:3001";
+
+export const getSpotifyLoginUrl = () => {
+  return apiurl + "/users/get-spotify-login-url";
+};
+
 export const exchangeCodeForToken = async (code) => {
   axios
     .get("http://127.0.0.1:3001/users/getToken", {

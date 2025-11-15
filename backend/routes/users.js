@@ -7,7 +7,7 @@ import {
   getSpotifyTokenFromDatabase,
 } from "../services/userService.js";
 import Spotify from "../services/spotifyService.js";
-
+import "dotenv/config";
 const cookieSettings = {
   path: "/",
   httpOnly: true,
@@ -16,6 +16,25 @@ const cookieSettings = {
 };
 
 async function userRoutes(fastify, options) {
+  fastify.get("/get-spotify-login-url", async function (request, reply) {
+    const scopes = [
+      "user-read-playback-state",
+      "user-modify-playback-state",
+      "user-read-currently-playing",
+      "streaming",
+      "user-read-email",
+      "user-read-private",
+    ];
+    const loginUrl = `${process.env.SPOTIFY_ENDPOINT}?client_id=${
+      process.env.SPOTIFY_CLIENT_ID
+    }&redirect_uri=${process.env.SPOTIFY_REDIRECT_URI}&scope=${scopes.join(
+      "%20"
+    )}&response_type=code&show_dialog=true`;
+
+    console.log("LOGIN URL = " + loginUrl);
+
+    reply.redirect(loginUrl);
+  });
   fastify.get("/getToken", async function (request, reply) {
     try {
       console.log("Received request for /getToken");

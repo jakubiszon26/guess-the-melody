@@ -16,9 +16,12 @@
 //   }
 // }
 
-// tsconfig.json
 {
   "compilerOptions": {
+    "baseUrl": "./src", // 1. Ustaw bazę na 'src'
+    "paths": {
+      "@/*": ["./*"] // 2. Teraz '@/*' będzie automatycznie wskazywać na 'src/*'
+    },
     "target": "ESNext",
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "module": "ESNext",
