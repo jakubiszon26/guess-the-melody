@@ -35,7 +35,9 @@ const SpotifyAuth = (props) => {
 
   return (
     <div>
-      <a href={loginurl}>Login to Spotify</a>
+      <a className="text-green-500" href={loginurl}>
+        Login to Spotify
+      </a>
     </div>
   );
 };
