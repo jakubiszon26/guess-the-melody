@@ -6,6 +6,7 @@ import {
   checkAuth,
   fetchPlayingTrack,
 } from "./api/spotifyApi";
+import LoginView from "./pages/LoginView";
 function App() {
   const {
     data: isAuthenticated,
@@ -56,7 +57,7 @@ function App() {
           <h2>Currently Playing: {playingTrack?.item?.name || "Nothing"}</h2>
         </div>
       ) : (
-        <SpotifyAuth />
+        <LoginView />
       )}
     </div>
   );

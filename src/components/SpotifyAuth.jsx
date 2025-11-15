@@ -1,11 +1,11 @@
 import { useEffect } from "react";
 import { exchangeCodeForToken } from "../api/spotifyApi";
+import { Button } from "../components/ui/button";
+import spotifyLogo from "../assets/icons/Spotify_logo.svg";
 const SpotifyAuth = (props) => {
   const spotifyendpoint = "https://accounts.spotify.com/authorize";
   const redirecturi = "http://127.0.0.1:3000/";
   const clientid = "918689905d6d43f1970fd741950e8d3f";
-
-  const { setToken } = props;
 
   const scopes = [
     "user-read-playback-state",
@@ -24,19 +24,20 @@ const SpotifyAuth = (props) => {
     const code = params.get("code");
     if (code) {
       //token is either true or false, it indicates whether user is logged
-      exchangeCodeForToken(code).then((token) => {
-        setToken(token);
-      });
+      exchangeCodeForToken(code);
       window.history.pushState({}, "", "/");
     } else {
       return;
     }
-  }, [setToken]);
+  }, []);
 
   return (
-    <div>
-      <a className="text-green-500" href={loginurl}>
-        Login to Spotify
+    <div className="m-4">
+      <a className="text-white" href={loginurl}>
+        <Button>
+          <img className="w-5" src={spotifyLogo} />
+          Login with Spotify
+        </Button>
       </a>
     </div>
   );
