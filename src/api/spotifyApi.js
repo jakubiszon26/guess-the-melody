@@ -83,6 +83,18 @@ export const getAccessToken = async () => {
   }
 };
 
+export const fetchPlaylists = async () => {
+  try {
+    const response = await axios.get(apiurl + "/music/get-user-playlists", {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching users playlists", error);
+    return null;
+  }
+};
+
 export const findPrieviewUrl = async (track, artist) => {
   try {
     const response = await axios.get(apiurl + "/music/find-preview-url", {
