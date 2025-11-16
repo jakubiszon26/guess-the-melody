@@ -100,7 +100,7 @@ const GameDashboard = (props) => {
                       aria-label="Number of players"
                       value={[playerCount]}
                       min={1}
-                      max={6}
+                      max={20}
                       step={1}
                       onValueChange={(value) =>
                         setPlayerCount?.(value?.[0] ?? 1)

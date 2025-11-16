@@ -6,17 +6,41 @@ import "dotenv/config";
 import userRoutes from "./routes/users.js";
 import musicRoutes from "./routes/music.js";
 import connectDB from "./config/db.js";
+import { createClient } from "redis";
+import { Server } from "socket.io";
+import { setupSocketLogic } from "./services/GameSocketService.js";
+
+const redisClient = createClient({
+  url: process.env.REDIS_URI,
+});
+await redisClient.connect();
+
 const fastify = Fastify({ logger: true });
 await fastify.register(fastifyCookie);
+
 fastify.register(cors, {
   origin: "http://127.0.0.1:3000",
   credentials: true,
 });
 
+const io = new Server(fastify.server, {
+  cors: {
+    origin: "http://localhost:3000", // Zmień na URL Twojego frontendu
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
+
+fastify.decorate("io", io);
+fastify.decorate("redis", redisClient);
+setupSocketLogic(fastify);
+
 connectDB();
 
 fastify.register(userRoutes, { prefix: "/users" });
 fastify.register(musicRoutes, { prefix: "/music" });
+fastify.register(musicRoutes, { prefix: "/game" });
+
 fastify.register(fastifyJwt, {
   secret: process.env.JWT_SECRET,
   cookie: {
