@@ -20,7 +20,7 @@ const SpotifyAuth = (props) => {
 
   return (
     <div className="m-4">
-      <Button onClick={() => buttonClicked()}>
+      <Button variant="outline" onClick={() => buttonClicked()}>
         <img className="w-5" src={spotifyLogo} />
         Login with Spotify
       </Button>

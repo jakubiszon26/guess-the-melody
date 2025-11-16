@@ -6,7 +6,9 @@ import {
   checkAuth,
   fetchPlayingTrack,
 } from "./api/spotifyApi";
+import { ThemeProvider } from "../src/components/ThemeProvider";
 import LoginView from "./pages/LoginView";
+import GameDashboard from "./pages/GameDashboard";
 function App() {
   const {
     data: isAuthenticated,
@@ -50,16 +52,13 @@ function App() {
     return <h1>Authentication error.</h1>;
   }
   return (
-    <div className="App">
+    <ThemeProvider>
       {isAuthenticated ? (
-        <div>
-          <h1>Welcome! {userData?.display_name || "User"} </h1>
-          <h2>Currently Playing: {playingTrack?.item?.name || "Nothing"}</h2>
-        </div>
+        <GameDashboard userData={userData} playingTrack={playingTrack} />
       ) : (
         <LoginView />
       )}
-    </div>
+    </ThemeProvider>
   );
 }
 
