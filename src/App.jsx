@@ -10,7 +10,12 @@ import { ThemeProvider } from "../src/components/ThemeProvider";
 import LoginView from "./pages/LoginView";
 import GameDashboard from "./pages/GameDashboard";
 import { AppSidebar } from "./components/AppSidebar";
-import { SidebarProvider } from "./components/ui/sidebar";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "./components/ui/sidebar";
+import { useState } from "react";
 function App() {
   const {
     data: isAuthenticated,
@@ -57,12 +62,17 @@ function App() {
     },
   });
 
+  const [selectedPlaylist, setSelectedPlaylist] = useState(null);
+  const [playerCount, setPlayerCount] = useState(1);
+  const [gameLength, setGameLength] = useState("short");
+
   if (authenticationIsLoading) {
     return <h1>loading...</h1>;
   }
   if (authenticationError) {
     return <h1>Authentication error.</h1>;
   }
+
   return (
     <ThemeProvider>
       <SidebarProvider>
@@ -70,8 +80,27 @@ function App() {
           userData={userData}
           playingTrack={playingTrack}
           userPlaylists={userPlaylists}
+          setSelectedPlaylist={setSelectedPlaylist}
         />
-        <main>{isAuthenticated ? <GameDashboard /> : <LoginView />}</main>
+        <SidebarInset>
+          <div className="sticky top-0 z-20 flex items-center gap-2 border-b bg-background/80 p-4 backdrop-blur md:hidden">
+            <SidebarTrigger className="md:hidden" />
+            <span className="text-sm font-semibold">Open navigation</span>
+          </div>
+          <main className="flex-1 p-4">
+            {isAuthenticated ? (
+              <GameDashboard
+                selectedPlaylist={selectedPlaylist}
+                playerCount={playerCount}
+                setPlayerCount={setPlayerCount}
+                gameLength={gameLength}
+                setGameLength={setGameLength}
+              />
+            ) : (
+              <LoginView />
+            )}
+          </main>
+        </SidebarInset>
       </SidebarProvider>
     </ThemeProvider>
   );

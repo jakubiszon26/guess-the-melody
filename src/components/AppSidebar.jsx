@@ -21,7 +21,7 @@ import { Button } from "./ui/button";
 import { FaRegCirclePlay } from "react-icons/fa6";
 
 export function AppSidebar(props) {
-  const { userData, playingTrack, userPlaylists } = props;
+  const { setSelectedPlaylist, userData, playingTrack, userPlaylists } = props;
 
   return (
     <Sidebar variant="floating">
@@ -34,21 +34,25 @@ export function AppSidebar(props) {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Your playlists</SidebarGroupLabel>
-          <ScrollArea className="h-72 w-54 rounded-md borde">
+          <ScrollArea className="h-72 w-full rounded-md border">
             {userPlaylists?.items.map((p) => {
               return (
-                <Item variant="outline" className="m-0.5">
+                <Item key={p.id} variant="outline" className="m-0.5">
                   <ItemMedia>
                     <Avatar variant="square">
                       <AvatarImage src={p.images[0].url} />
                     </Avatar>
                   </ItemMedia>
                   <ItemContent> {p.name}</ItemContent>
-                  <ItemMedia>
-                    <Button variant="outline" size="icon">
+                  <ItemActions>
+                    <Button
+                      onClick={() => setSelectedPlaylist(p)}
+                      variant="outline"
+                      size="icon"
+                    >
                       <FaRegCirclePlay />
                     </Button>
-                  </ItemMedia>
+                  </ItemActions>
                 </Item>
               );
             })}

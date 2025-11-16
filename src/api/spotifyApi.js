@@ -94,6 +94,23 @@ export const fetchPlaylists = async () => {
     return null;
   }
 };
+export const getTracksFromPlaylist = async (playlistData) => {
+  try {
+    const response = await axios.get(
+      apiurl + "/music/get-tracks-from-playlist",
+      {
+        params: {
+          playlistID: playlistData.id,
+        },
+        withCredentials: true,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching tracks from playlist", error);
+    return null;
+  }
+};
 
 export const findPrieviewUrl = async (track, artist) => {
   try {
