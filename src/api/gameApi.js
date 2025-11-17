@@ -31,3 +31,18 @@ export async function getSession() {
     throw error;
   }
 }
+
+export async function getGameCode() {
+  try {
+    const response = await axios.get(apiurl + "get-game-code", {
+      withCredentials: true,
+    });
+    if (response.data.code) {
+      return response.data.code;
+    } else {
+      throw new Error("no game code on the server");
+    }
+  } catch (error) {
+    throw error;
+  }
+}

@@ -19,6 +19,7 @@ import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { useState } from "react";
 import GameLobby from "./pages/GameLobby";
 import { getSession } from "./api/gameApi";
+import JoinGamePage from "./pages/JoinGamePage";
 
 const ProtectedRoute = ({ isAllowed, redirectTo = "/login", children }) => {
   if (!isAllowed) {
@@ -157,6 +158,8 @@ function App() {
                 gameLength={gameLength}
                 setGameLength={setGameLength}
                 gameSettings={gameSettings}
+                gameSession={gameSession}
+                gameSessionLoading={gameSessionLoading}
               />
             }
           />
@@ -180,6 +183,7 @@ function App() {
             </ProtectedRoute>
           }
         ></Route>
+        <Route path="/join" element={<JoinGamePage />}></Route>
       </Routes>
     </ThemeProvider>
   );

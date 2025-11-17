@@ -1,5 +1,7 @@
 export class GameState {
   constructor(spotifyID, gameSettings) {
+    this.hostID, this.gameCode;
+    this.gameStarted = false;
     this.gameID = `game:${spotifyID}`;
     this.hostSpotifyID = spotifyID;
     this.gameLenght = gameSettings.gameLenght;
@@ -16,6 +18,10 @@ export class GameState {
   }
   playerAddScore(player, score) {
     this.scores[player.id] += score;
+  }
+
+  setHostID(socketID) {
+    this.hostID = socketID;
   }
 
   addPlayedTrack(trackID) {
