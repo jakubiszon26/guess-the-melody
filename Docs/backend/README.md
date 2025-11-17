@@ -9,7 +9,7 @@ The backend is built with Fastify and centralizes authentication, Spotify data a
 - **Fastify Core:** Hosts all HTTP endpoints, applies CORS, cookies, and JWT verification.
 - **MongoDB:** Stores Spotify-linked user records with credentials managed through `userService`.
 - **Redis:** Caches `GameState` payloads for fast lookup during a session.
-- **Socket.io:** Wired through `setupSocketLogic` (currently connection logging only) for future live updates.
+- **Socket.io:** Wired through `setupSocketLogic` to coordinate lobby membership. Hosts and guests join rooms via the `join_game` event so player rosters stay in sync in real time.
 - **Spotify Web API:** Accessed via `spotifyService` helpers for profile, playlist, and track data.
 
 ## API Reference
@@ -175,7 +175,7 @@ All routes live under `/users`, `/music`, or `/game`. Unless noted otherwise, re
 
 #### `POST /game/request-new-game`
 
-- **Description:** Initializes a `GameState` for the authenticated host, persists it in Redis for two hours, and returns the generated `gameID`.
+- **Description:** Initializes a `GameState` for the authenticated host, persists it in Redis for two hours, links a six digit `gameCode` to the lobby, and returns both identifiers so the host can share the code.
 - **Authentication:** Required.
 - **Body Parameters:**
   | Name | Type | Location | Description |
@@ -183,7 +183,11 @@ All routes live under `/users`, `/music`, or `/game`. Unless noted otherwise, re
   | `gameSettings` | object | body | Structure describing the chosen playlist, number of players, game length, etc. |
 - **Success Response:**
   ```json
-  { "created": true, "gameID": "game:spotify_user" }
+  {
+    "created": true,
+    "gameID": "game:spotify_user",
+    "gameCode": 123456
+  }
   ```
 - **Error Response:**
   ```json
@@ -211,6 +215,20 @@ All routes live under `/users`, `/music`, or `/game`. Unless noted otherwise, re
   { "error": "Failed to load session" }
   ```
 
+#### `GET /game/get-game-code`
+
+- **Description:** Looks up the current host’s `GameState` in Redis and returns the generated lobby code so it can be displayed inside the lobby UI.
+- **Authentication:** Required.
+- **Parameters:** None.
+- **Success Response:**
+  ```json
+  { "code": 123456 }
+  ```
+- **Error Response:**
+  ```json
+  { "error": "Failed to load session" }
+  ```
+
 ## Service Layer Reference (`backend/services/*.js`)
 
 ### `GameState`
@@ -221,17 +239,21 @@ All routes live under `/users`, `/music`, or `/game`. Unless noted otherwise, re
   - `spotifyID`: Host’s Spotify ID (used to derive `gameID`).
   - `gameSettings`: Object coming from the frontend. Currently expects `gameLenght`, `gamePlayers`, and `tracks` properties.
 - **Fields:**
-  - `gameID`, `hostSpotifyID`, `gameLenght`, `maxPlayerCount`, `tracksToPlay`, `playedTracks`, `players`, `scores`, `currentRound`.
+  - `gameID`, `gameCode`, `hostSpotifyID`, `hostID`, `gameLenght`, `maxPlayerCount`, `tracksToPlay`, `playedTracks`, `players`, `scores`, `currentRound`.
 - **Methods:**
   - `addPlayer(player)`: Inserts a player record keyed by `player.id`.
   - `playerAddScore(player, score)`: Increments the tracked score for the player.
   - `addPlayedTrack(trackID)`: Pushes the track into `playedTracks` and advances `currentRound`.
+  - `setHostID(socketID)`: Saves the host’s active socket connection so events can target the right room membership.
 
 ### `GameSocketService`
 
 - **Location:** `backend/services/GameSocketService.js`
 - **Purpose:** Attaches Socket.io listeners via `setupSocketLogic(fastify)`.
-- **Behavior:** Logs every socket connection as `new player {socket.id}`. Hooks for `join_game` and `disconnect` are scaffolded but commented out, serving as the entry point for future multiplayer real-time events.
+- **Behavior:**
+  - Subscribes to `join_game` events. Hosts emit `(gameCode, "Host")` to claim room ownership and trigger the initial player list broadcast.
+  - Guests emit `(gameCode, playerName, callback)`; the server resolves the numeric code to a `gameID`, rehydrates the `GameState`, assigns a generated name when none is provided, and persists the updated player roster back to Redis.
+  - Emits `update_players` to the Socket.io room whenever the lobby changes so every client stays in sync. Errors are reported to the caller via the optional callback or `socket.emit("error", ...)`.
 
 ### `spotifyService`
 
@@ -267,4 +289,5 @@ All routes live under `/users`, `/music`, or `/game`. Unless noted otherwise, re
 
 - JWT cookies authenticate every protected route via Fastify’s `authenticate` decorator.
 - Redis entries created by `POST /game/request-new-game` currently expire after 2 hours (7200 seconds) to prevent stale lobbies.
+- Two keys are stored for each lobby: `game:{spotifyID}` holds the full `GameState`, and `<gameCode>` (stringified) points to the same `gameID`, enabling players to join by code without knowing the host’s ID.
 - Extending gameplay (player joins, scoring) should reuse `GameState` helpers to ensure consistent mutation semantics before persisting back to Redis.

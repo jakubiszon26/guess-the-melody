@@ -2,7 +2,7 @@
 
 ## Overview
 
-The frontend is a React application bootstrapped with Vite and styled via custom components. Data fetching relies on `@tanstack/react-query` so that authentication status, Spotify profile data, playlists, playback state, and game sessions all share a consistent caching strategy. Routing is powered by `react-router-dom` and guarded with custom wrappers to ensure only authenticated players can reach gameplay surfaces.
+The frontend is a React application bootstrapped with Vite and styled via custom components plus Shadcn UI primitives (alert dialog, form, label). Data fetching relies on `@tanstack/react-query` so that authentication status, Spotify profile data, playlists, playback state, game sessions, and lobby codes all share a consistent caching strategy. Routing is powered by `react-router-dom` and guarded with custom wrappers to ensure only authenticated players can reach gameplay surfaces, while Socket.io keeps the lobby player list synchronized.
 
 ## Authentication Flow
 
@@ -41,19 +41,20 @@ Routing is centralized in `src/App.jsx`. Authentication state flows into guard c
 
 ### Route Map
 
-| Path        | Element                                                     | Notes                                                                       |
-| ----------- | ----------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `/login`    | `<LoginView />` or redirect to `/` if already authenticated | Public route.                                                               |
-| `/`         | `<ProtectedRoute><ProtectedLayout /></ProtectedRoute>`      | Houses the dashboard and any future authenticated child routes.             |
-| `/` (index) | `<GameDashboard />`                                         | Nested child rendered via `<Outlet>`. Receives playlist/game state setters. |
-| `/lobby`    | `<ProtectedRoute><GameLobby /></ProtectedRoute>`            | Requires both authentication and a cached `gameSession` (or still loading). |
-| `*`         | `<Navigate to={isAuthenticated ? "/" : "/login"} />`        | Catch-all guard aligning unknown paths with auth status.                    |
+| Path        | Element                                                     | Notes                                                                                                           |
+| ----------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `/login`    | `<LoginView />` or redirect to `/` if already authenticated | Public route.                                                                                                   |
+| `/`         | `<ProtectedRoute><ProtectedLayout /></ProtectedRoute>`      | Houses the dashboard and any future authenticated child routes.                                                 |
+| `/` (index) | `<GameDashboard />`                                         | Nested child rendered via `<Outlet>`. Receives playlist/game state setters and session props.                   |
+| `/lobby`    | `<ProtectedRoute><GameLobby /></ProtectedRoute>`            | Requires authentication plus an existing session. Displays the shareable `gameCode`.                            |
+| `/join`     | `<JoinGamePage />`                                          | Public entry point for guests. Validates the code/name with React Hook Form + zod, then uses Socket.io to join. |
+| `*`         | `<Navigate to={isAuthenticated ? "/" : "/login"} />`        | Catch-all guard aligning unknown paths with auth status.                                                        |
 
 ### Data Fetch Integration
 
 - Authentication gate (`checkAuth`) runs first. Its `isAuthenticated` result gates all other queries via the `enabled` flag.
-- `fetchUserProfile`, `fetchPlaylists`, `fetchPlayingTrack`, and `getSession` all depend on the auth query succeeding and re-run automatically when the cookie status changes.
-- `GameDashboard` uses local state (`selectedPlaylist`, `playerCount`, `gameLength`) to compose `gameSettings`, which the `Start Game` CTA posts to the backend.
+- `fetchUserProfile`, `fetchPlaylists`, `fetchPlayingTrack`, `getSession`, and `getGameCode` all depend on the auth query succeeding and re-run automatically when the cookie status changes.
+- `GameDashboard` uses local state (`selectedPlaylist`, `playerCount`, `gameLength`) to compose `gameSettings`, which the `Start Game` CTA posts to the backend. After creation it invalidates the `session` query to ensure `/lobby` reflects the latest state.
 
 ## API Client Reference
 
@@ -61,10 +62,11 @@ All API helpers live under `src/api`. They centralize axios usage with `withCred
 
 ### `src/api/gameApi.js`
 
-| Function                       | Description                                                                                                                             | Parameters                                                                      | Returns                                                         |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| `requestNewGame(gameSettings)` | Posts to `POST /game/request-new-game` to persist a lobby in Redis. Logs the response and returns `{ created, gameID }`.                | `gameSettings` (object) – includes playlist metadata, player count, and length. | Resolves with the backend JSON response or throws on failure.   |
-| `getSession()`                 | Calls `GET /game/session` to recover the active lobby for the authenticated user. Useful for deciding if `/lobby` should be accessible. | None.                                                                           | Resolves with `{ gameSession }` or `null` if no session exists. |
+| Function                       | Description                                                                                                                                 | Parameters                                                                      | Returns                                                         |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `requestNewGame(gameSettings)` | Posts to `POST /game/request-new-game` to persist a lobby in Redis. Returns `{ created, gameID, gameCode }` so the host can share the code. | `gameSettings` (object) – includes playlist metadata, player count, and length. | Resolves with the backend JSON response or throws on failure.   |
+| `getSession()`                 | Calls `GET /game/session` to recover the active lobby for the authenticated user. Useful for deciding if `/lobby` should be accessible.     | None.                                                                           | Resolves with `{ gameSession }` or `null` if no session exists. |
+| `getGameCode()`                | Calls `GET /game/get-game-code` to hydrate the lobby view with the numeric join code that is stored alongside the session in Redis.         | None.                                                                           | Resolves with a number or throws if no active session.          |
 
 ### `src/api/spotifyApi.js`
 
@@ -81,11 +83,17 @@ All API helpers live under `src/api`. They centralize axios usage with `withCred
 | `getTracksFromPlaylist(playlistData)` | Fetches tracks for the selected playlist via `GET /music/get-tracks-from-playlist` with `playlistID`.                                          | `playlistData` (object with `id`).   | Playlist tracks payload or `null`.                   |
 | `findPrieviewUrl(track, artist)`      | Queries `/music/find-preview-url` (not yet implemented) to look up preview snippets. Currently serves as a stub for future enhancements.       | `track` (string), `artist` (string). | `{ previewUrl }` or `null`.                          |
 
+### `src/api/socket.js`
+
+Creates a single Socket.io client instance configured with `autoConnect: false` and `withCredentials: true`. Pages call `socket.connect()` before emitting `join_game` so both hosts and guests join the same room without duplicating connection logic.
+
 ## Component Interaction Notes
 
 - `AppSidebar` consumes `userPlaylists`, `setSelectedPlaylist`, and `gameSettings`, enabling users to pick the playlist before launching a game.
-- `GameDashboard` pulls tracks from the selected playlist, enforces minimum track counts for each game length, and calls `requestNewGame`. After the Promise resolves with `{ created: true }`, it navigates to `/lobby` using `useNavigate`.
-- `GameLobby` takes `session={gameSession?.gameSession}` and is only reachable when `getSession` succeeds or is still loading (prevents routing flicker while awaiting Redis).
+- `GameDashboard` pulls tracks from the selected playlist, enforces minimum track counts for each game length, and calls `requestNewGame`. After the Promise resolves with `{ created: true }`, it invalidates the `session` query and navigates to `/lobby` using `useNavigate`.
+- `GameLobby` uses `useQuery({ queryKey: ["gamecode"], queryFn: getGameCode })` to show the current lobby code, then connects to Socket.io, emits `join_game` as the host, and listens for `update_players` to render the roster inside a `ScrollArea`.
+- `JoinGamePage` renders a two-field form (code + nickname) powered by `react-hook-form` with `zodResolver`. On submit it ensures the socket is connected, emits `join_game`, and surfaces validation errors returned by the server.
+- Shared form primitives (`Form`, `FormField`, `FormItem`, `FormLabel`, etc.) wrap the Shadcn components so future forms can reuse the same validation/error UX across the app.
 
 ## Extensibility Considerations
 
