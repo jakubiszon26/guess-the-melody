@@ -21,6 +21,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { requestNewGame } from "../api/gameApi";
 
 const GameDashboard = (props) => {
   const {
@@ -29,6 +30,7 @@ const GameDashboard = (props) => {
     setPlayerCount,
     gameLength = "short",
     setGameLength,
+    gameSettings,
   } = props;
   const [tracks, setTracks] = useState(null);
   const lengthOptions = [
@@ -164,7 +166,10 @@ const GameDashboard = (props) => {
                 </div>
               </CardContent>
               <CardFooter className="justify-end">
-                <Button className="bg-emerald-500 text-white hover:bg-emerald-600">
+                <Button
+                  onClick={() => requestNewGame(gameSettings)}
+                  className="bg-emerald-500 text-white hover:bg-emerald-600"
+                >
                   Start Game
                 </Button>
               </CardFooter>

@@ -21,7 +21,13 @@ import { Button } from "./ui/button";
 import { FaRegCirclePlay } from "react-icons/fa6";
 
 export function AppSidebar(props) {
-  const { setSelectedPlaylist, userData, playingTrack, userPlaylists } = props;
+  const {
+    setSelectedPlaylist,
+    userData,
+    playingTrack,
+    userPlaylists,
+    gameSettings,
+  } = props;
 
   return (
     <Sidebar variant="floating">

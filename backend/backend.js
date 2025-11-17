@@ -5,6 +5,7 @@ import fastifyJwt from "@fastify/jwt";
 import "dotenv/config";
 import userRoutes from "./routes/users.js";
 import musicRoutes from "./routes/music.js";
+import gameRoutes from "./routes/game.js";
 import connectDB from "./config/db.js";
 import { createClient } from "redis";
 import { Server } from "socket.io";
@@ -25,7 +26,7 @@ fastify.register(cors, {
 
 const io = new Server(fastify.server, {
   cors: {
-    origin: "http://localhost:3000", // Zmień na URL Twojego frontendu
+    origin: "http://localhost:3000",
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -39,7 +40,7 @@ connectDB();
 
 fastify.register(userRoutes, { prefix: "/users" });
 fastify.register(musicRoutes, { prefix: "/music" });
-fastify.register(musicRoutes, { prefix: "/game" });
+fastify.register(gameRoutes, { prefix: "/game" });
 
 fastify.register(fastifyJwt, {
   secret: process.env.JWT_SECRET,

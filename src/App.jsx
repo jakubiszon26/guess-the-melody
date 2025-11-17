@@ -66,6 +66,12 @@ function App() {
   const [playerCount, setPlayerCount] = useState(1);
   const [gameLength, setGameLength] = useState("short");
 
+  const gameSettings = {
+    selectedPlaylist: selectedPlaylist,
+    playerCount: playerCount,
+    gameLength: gameLength,
+  };
+
   if (authenticationIsLoading) {
     return <h1>loading...</h1>;
   }
@@ -81,6 +87,7 @@ function App() {
           playingTrack={playingTrack}
           userPlaylists={userPlaylists}
           setSelectedPlaylist={setSelectedPlaylist}
+          gameSettings={gameSettings}
         />
         <SidebarInset>
           <div className="sticky top-0 z-20 flex items-center gap-2 border-b bg-background/80 p-4 backdrop-blur md:hidden">
@@ -95,6 +102,7 @@ function App() {
                 setPlayerCount={setPlayerCount}
                 gameLength={gameLength}
                 setGameLength={setGameLength}
+                gameSettings={gameSettings}
               />
             ) : (
               <LoginView />
