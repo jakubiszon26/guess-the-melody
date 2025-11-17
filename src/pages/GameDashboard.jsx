@@ -22,7 +22,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { requestNewGame } from "../api/gameApi";
-
+import { useNavigate } from "react-router-dom";
 const GameDashboard = (props) => {
   const {
     selectedPlaylist,
@@ -45,6 +45,7 @@ const GameDashboard = (props) => {
       console.log(tracks);
     }
   }, [selectedPlaylist]);
+  const navigate = useNavigate();
 
   const trackCount = tracks?.items?.length ?? 0;
 
@@ -167,7 +168,13 @@ const GameDashboard = (props) => {
               </CardContent>
               <CardFooter className="justify-end">
                 <Button
-                  onClick={() => requestNewGame(gameSettings)}
+                  onClick={() => {
+                    requestNewGame(gameSettings).then((data) => {
+                      if (data.created) {
+                        navigate("/lobby", { replace: true });
+                      }
+                    });
+                  }}
                   className="bg-emerald-500 text-white hover:bg-emerald-600"
                 >
                   Start Game

@@ -58,7 +58,7 @@ async function userRoutes(fastify, options) {
         );
         const internalToken = await generateInternalToken(fastify, updatedUser);
         reply.setCookie("session_token", internalToken, cookieSettings);
-        return reply.redirect("http://localhost:3000/");
+        reply.send({ login: "success" });
       } else {
         const newUSer = await databaseCreateUser(
           userID,
@@ -68,6 +68,7 @@ async function userRoutes(fastify, options) {
         );
         const internalToken = await generateInternalToken(fastify, newUSer);
         reply.setCookie("session_token", internalToken, cookieSettings);
+        reply.send({ login: "success" });
       }
     } catch (error) {
       throw new Error(error);

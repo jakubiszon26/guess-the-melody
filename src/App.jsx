@@ -15,7 +15,46 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "./components/ui/sidebar";
+import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { useState } from "react";
+import GameLobby from "./pages/GameLobby";
+import { getSession } from "./api/gameApi";
+
+const ProtectedRoute = ({ isAllowed, redirectTo = "/login", children }) => {
+  if (!isAllowed) {
+    return <Navigate to={redirectTo} replace />;
+  }
+  return children;
+};
+
+const ProtectedLayout = ({
+  userData,
+  playingTrack,
+  userPlaylists,
+  setSelectedPlaylist,
+  gameSettings,
+}) => {
+  return (
+    <SidebarProvider>
+      <AppSidebar
+        userData={userData}
+        playingTrack={playingTrack}
+        userPlaylists={userPlaylists}
+        setSelectedPlaylist={setSelectedPlaylist}
+        gameSettings={gameSettings}
+      />
+      <SidebarInset>
+        <div className="sticky top-0 z-20 flex items-center gap-2 border-b bg-background/80 p-4 backdrop-blur md:hidden">
+          <SidebarTrigger className="md:hidden" />
+          <span className="text-sm font-semibold">Open navigation</span>
+        </div>
+        <main className="flex-1 p-4">
+          <Outlet />
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
+  );
+};
 function App() {
   const {
     data: isAuthenticated,
@@ -61,6 +100,11 @@ function App() {
       return Math.max(nextRefetch, 5000);
     },
   });
+  const { data: gameSession, isLoading: gameSessionLoading } = useQuery({
+    queryKey: ["session"],
+    queryFn: getSession,
+    enabled: !!isAuthenticated,
+  });
 
   const [selectedPlaylist, setSelectedPlaylist] = useState(null);
   const [playerCount, setPlayerCount] = useState(1);
@@ -81,21 +125,31 @@ function App() {
 
   return (
     <ThemeProvider>
-      <SidebarProvider>
-        <AppSidebar
-          userData={userData}
-          playingTrack={playingTrack}
-          userPlaylists={userPlaylists}
-          setSelectedPlaylist={setSelectedPlaylist}
-          gameSettings={gameSettings}
+      <Routes>
+        <Route
+          path="/login"
+          element={
+            isAuthenticated ? <Navigate to="/" replace /> : <LoginView />
+          }
         />
-        <SidebarInset>
-          <div className="sticky top-0 z-20 flex items-center gap-2 border-b bg-background/80 p-4 backdrop-blur md:hidden">
-            <SidebarTrigger className="md:hidden" />
-            <span className="text-sm font-semibold">Open navigation</span>
-          </div>
-          <main className="flex-1 p-4">
-            {isAuthenticated ? (
+
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute isAllowed={isAuthenticated} redirectTo="/login">
+              <ProtectedLayout
+                userData={userData}
+                playingTrack={playingTrack}
+                userPlaylists={userPlaylists}
+                setSelectedPlaylist={setSelectedPlaylist}
+                gameSettings={gameSettings}
+              />
+            </ProtectedRoute>
+          }
+        >
+          <Route
+            index
+            element={
               <GameDashboard
                 selectedPlaylist={selectedPlaylist}
                 playerCount={playerCount}
@@ -104,12 +158,29 @@ function App() {
                 setGameLength={setGameLength}
                 gameSettings={gameSettings}
               />
-            ) : (
-              <LoginView />
-            )}
-          </main>
-        </SidebarInset>
-      </SidebarProvider>
+            }
+          />
+        </Route>
+
+        <Route
+          path="*"
+          element={<Navigate to={isAuthenticated ? "/" : "/login"} replace />}
+        />
+        <Route
+          path="/lobby"
+          element={
+            <ProtectedRoute
+              isAllowed={
+                isAuthenticated &&
+                (gameSessionLoading || Boolean(gameSession?.gameSession))
+              }
+              redirectTo="/login"
+            >
+              <GameLobby session={gameSession?.gameSession} />
+            </ProtectedRoute>
+          }
+        ></Route>
+      </Routes>
     </ThemeProvider>
   );
 }

@@ -21,5 +21,24 @@ async function gameRoutes(fastify, options) {
       }
     }
   );
+  fastify.get(
+    "/session",
+    { preHandler: [fastify.authenticate] },
+    async function (request, reply) {
+      try {
+        const spotifyID = request.user.spotifyID;
+        if (spotifyID) {
+          const rawData = await fastify.redis.get(`game:${spotifyID}`);
+          if (rawData) {
+            const gameSession = JSON.parse(rawData);
+            reply.send({ gameSession });
+          }
+        }
+      } catch (error) {
+        console.error(error);
+        throw error;
+      }
+    }
+  );
 }
 export default gameRoutes;
