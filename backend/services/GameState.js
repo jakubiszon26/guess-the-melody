@@ -4,13 +4,13 @@ export class GameState {
     this.gameStarted = false;
     this.gameID = `game:${spotifyID}`;
     this.hostSpotifyID = spotifyID;
-    this.gameLenght = gameSettings.gameLenght;
+    this.gameLength = gameSettings.gameLenght;
     this.maxPlayerCount = gameSettings.gamePlayers;
-    this.tracksToPlay = gameSettings.tracks;
-    this.playedTracks = [];
+    this.tracksArray = gameSettings.tracksArray;
+    this.playedTracks = []; //indeksy z trackArray.
     this.players = {};
     this.scores = {};
-    this.currentRound = 1;
+    this.currentRound = 0;
   }
 
   addPlayer(player) {
@@ -29,7 +29,6 @@ export class GameState {
   }
 
   addPlayedTrack(trackID) {
-    const tracksPlayedCount = this.playedTracks.push(trackID);
-    this.currentRound = tracksPlayedCount + 1;
+    this.playedTracks.push(trackID);
   }
 }

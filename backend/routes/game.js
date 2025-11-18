@@ -1,6 +1,7 @@
 import { randomInt } from "crypto";
 import { GameState } from "../services/GameState.js";
-
+import Spotify from "../services/spotifyService.js";
+import { getSpotifyTokenFromDatabase } from "../services/userService.js";
 async function gameRoutes(fastify, options) {
   fastify.post(
     "/request-new-game",
@@ -8,9 +9,29 @@ async function gameRoutes(fastify, options) {
     async function (request, reply) {
       try {
         const spotifyID = request.user.spotifyID;
+        const token = await getSpotifyTokenFromDatabase(spotifyID);
         const gameSettings = request.body.gameSettings;
         if (spotifyID && gameSettings) {
-          const gameState = new GameState(spotifyID, gameSettings);
+          //game settings to tylko selectedPlaylist, playerCount i gameLenght
+          //bede musial pobrac piosenki, ktore chce grac. Najlepiej miec je w formie tracksArray
+          const trackIDs = await Spotify.getTrackIDsFromPlaylist(
+            token,
+            gameSettings.selectedPlaylist.id
+          );
+          const trackIDsString = trackIDs.join(",");
+          const tracksArray = await Spotify.convertTrackID(
+            token,
+            trackIDsString
+          );
+
+          const finalGameSettings = {
+            selectedPlaylist: gameSettings.selectedPlaylist,
+            playerCount: gameSettings.playerCount,
+            gameLenght: gameSettings.gameLength,
+            tracksArray: tracksArray,
+          };
+
+          const gameState = new GameState(spotifyID, finalGameSettings);
           const gameCode = randomInt(999999);
           gameState.gameCode = gameCode;
 

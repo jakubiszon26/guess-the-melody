@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/card";
 
 import { socket } from "../api/socket";
+import { replace, useNavigate } from "react-router-dom";
 
 const formSchema = z.object({
   gameCode: z.string().min(4, {
@@ -40,9 +41,11 @@ const formSchema = z.object({
     }),
 });
 
-const JoinGameForm = () => {
-  const [joined, setJoined] = useState(false);
+const JoinGameForm = (props) => {
+  const { isPlayer, setIsPlayer } = props;
   const [gameStarted, setGameStarted] = useState(false);
+
+  const navigate = useNavigate();
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -63,12 +66,12 @@ const JoinGameForm = () => {
           message: response.error,
         });
       }
-      setJoined(response.success);
+      setIsPlayer(response.success);
     });
   };
 
   useEffect(() => {
-    if (joined) {
+    if (isPlayer) {
       socket.on("game_started", (data) => {
         setGameStarted(data);
       });
@@ -76,11 +79,11 @@ const JoinGameForm = () => {
         socket.off("game_started");
       };
     }
-  }, [joined]);
+  }, [isPlayer]);
   if (gameStarted) {
-    return <p>Game started dear player</p>;
+    navigate("/playerscreen", replace);
   }
-  if (joined) {
+  if (isPlayer) {
     return (
       <div className="flex w-full min-h-screen items-center justify-center p-6">
         <Card className="w-full max-w-lg text-center">

@@ -20,6 +20,8 @@ import { useState } from "react";
 import GameLobby from "./pages/GameLobby";
 import { getSession } from "./api/gameApi";
 import JoinGamePage from "./pages/JoinGamePage";
+import HostGameScreen from "./pages/HostGameScreen";
+import PlayerGameScreen from "./pages/PlayerGameScreen";
 
 const ProtectedRoute = ({ isAllowed, redirectTo = "/login", children }) => {
   if (!isAllowed) {
@@ -110,7 +112,9 @@ function App() {
   const [selectedPlaylist, setSelectedPlaylist] = useState(null);
   const [playerCount, setPlayerCount] = useState(1);
   const [gameLength, setGameLength] = useState("short");
-
+  //move to local storage later
+  const [isHost, setIsHost] = useState(false);
+  const [isPlayer, setIsPlayer] = useState(false);
   const gameSettings = {
     selectedPlaylist: selectedPlaylist,
     playerCount: playerCount,
@@ -179,11 +183,36 @@ function App() {
               }
               redirectTo="/login"
             >
-              <GameLobby session={gameSession?.gameSession} />
+              <GameLobby
+                setIsHost={setIsHost}
+                isHost={isHost}
+                session={gameSession?.gameSession}
+              />
             </ProtectedRoute>
           }
         ></Route>
-        <Route path="/join" element={<JoinGamePage />}></Route>
+        <Route
+          path="/join"
+          element={
+            <JoinGamePage isPlayer={isPlayer} setIsPlayer={setIsPlayer} />
+          }
+        ></Route>
+        <Route
+          path="/gamescreen"
+          element={
+            <ProtectedRoute isAllowed={isHost} redirectTo="/">
+              <HostGameScreen gameSession={gameSession} />{" "}
+            </ProtectedRoute>
+          }
+        ></Route>
+        <Route
+          path="/playerscreen"
+          element={
+            <ProtectedRoute isAllowed={isPlayer} redirectTo="/join">
+              <PlayerGameScreen />
+            </ProtectedRoute>
+          }
+        ></Route>
       </Routes>
     </ThemeProvider>
   );

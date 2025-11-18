@@ -1,5 +1,6 @@
 import { randomInt } from "crypto";
 import { GameState } from "./GameState.js";
+import { startGameEngine } from "./GameEngine.js";
 
 export function setupSocketLogic(fastify) {
   fastify.io.on("connection", (socket) => {
@@ -14,7 +15,7 @@ export function setupSocketLogic(fastify) {
               const gameState = new GameState(null, {
                 gameLenght: 0,
                 gamePlayers: 0,
-                tracks: [],
+                tracksArray: [],
               });
               Object.assign(gameState, plainObject);
               if (name === "Host") {
@@ -65,15 +66,19 @@ export function setupSocketLogic(fastify) {
           const gameState = new GameState(null, {
             gameLenght: 0,
             gamePlayers: 0,
-            tracks: [],
+            tracksArray: [],
           });
           Object.assign(gameState, plainObject);
           gameState.startGame();
+          await fastify.redis.set(gameID, JSON.stringify(gameState));
           if (gameState.gameStarted) {
             fastify.io.to(gameID).emit("game_started", gameState.gameStarted);
           }
         }
       }
+    });
+    socket.on("host_ready", async (gameID) => {
+      await startGameEngine(fastify, gameID);
     });
   });
 }
