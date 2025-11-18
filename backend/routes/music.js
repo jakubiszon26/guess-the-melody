@@ -1,6 +1,7 @@
 import axios from "axios";
 import { getSpotifyTokenFromDatabase } from "../services/userService.js";
 import Spotify from "../services/spotifyService.js";
+import Deezer from "../services/DeezerService.js";
 
 export default async function musicRoutes(fastify, options) {
   fastify.get(
@@ -80,6 +81,76 @@ export default async function musicRoutes(fastify, options) {
         }
       } catch (error) {
         console.error("ERROR IN /get-several-tracks:", error);
+        reply.status(500).send({ error: error.message });
+      }
+    }
+  );
+  fastify.get(
+    "/get-ids-from-playlist",
+    { preHandler: [fastify.authenticate] },
+    async (request, reply) => {
+      try {
+        const token = await getSpotifyTokenFromDatabase(request.user.spotifyID);
+        if (request.query.playlistID) {
+          const trackIDs = await Spotify.getTrackIDsFromPlaylist(
+            token,
+            request.query.playlistID
+          );
+          reply.send(trackIDs);
+        }
+      } catch (error) {
+        console.error("ERROR IN /get-ids-from-playlist:", error);
+        reply.status(500).send({ error: error.message });
+      }
+    }
+  );
+
+  fastify.get(
+    "/convert-spotify-to-isrcs",
+    { preHandler: [fastify.authenticate] },
+    async (request, reply) => {
+      try {
+        if (request.query.ids) {
+          const token = await getSpotifyTokenFromDatabase(
+            request.user.spotifyID
+          );
+          const isrcs = await Spotify.convertTrackID(token, request.query.ids);
+          reply.send(isrcs);
+        }
+      } catch (error) {
+        console.error("ERROR IN /convert-spotify-to-isrcs", error);
+        reply.status(500).send({ error: error.message });
+      }
+    }
+  );
+  fastify.post(
+    "/get-preview-from-deezer",
+    { preHandler: [fastify.authenticate] },
+    async (request, reply) => {
+      try {
+        const { tracksArray, index } = request.body;
+
+        if (!tracksArray || !Array.isArray(tracksArray)) {
+          return reply.status(400).send({
+            error: "Missing 'tracksArray'",
+          });
+        }
+
+        if (index === undefined || typeof index !== "number") {
+          return reply
+            .status(400)
+            .send({ error: "index missing or type error" });
+        }
+
+        if (index < 0 || index >= tracksArray.length) {
+          return reply.status(400).send({ error: "index over array lenght" });
+        }
+
+        const preview = await Deezer.getTrackPreview(tracksArray, index);
+
+        reply.send({ previewUrl: preview });
+      } catch (error) {
+        console.error("ERROR IN /get-preview-from-deezer", error);
         reply.status(500).send({ error: error.message });
       }
     }

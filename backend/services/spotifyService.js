@@ -136,6 +136,73 @@ const Spotify = {
       throw error;
     }
   },
+  async getTrackIDsFromPlaylist(token, playlistID) {
+    try {
+      const response = await spotifyGet(
+        token,
+        `https://api.spotify.com/v1/playlists/${playlistID}/tracks`
+      );
+
+      if (response.data && response.data.items) {
+        const trackIDs = response.data.items
+          .map((item) => {
+            if (item.track && item.track.id) {
+              return item.track.id;
+            }
+            return null;
+          })
+          .filter((id) => id !== null);
+
+        return trackIDs;
+      }
+      return [];
+    } catch (error) {
+      console.error("Error ", error);
+      throw error;
+    }
+  },
+  async convertTrackID(token, trackIDsString) {
+    try {
+      const allIds = trackIDsString
+        .split(",")
+        .map((id) => id.trim())
+        .filter((id) => id);
+
+      const chunks = [];
+      for (let i = 0; i < allIds.length; i += 50) {
+        chunks.push(allIds.slice(i, i + 50));
+      }
+
+      const responses = await Promise.all(
+        chunks.map(async (chunk) => {
+          const idsString = chunk.join(",");
+          const res = await Spotify.tracks(token, { ids: idsString });
+          return res?.tracks || res?.data?.tracks || [];
+        })
+      );
+
+      const allTracks = responses.flat();
+
+      const result = allTracks
+        .map((track) => {
+          if (track && track.id) {
+            return {
+              spotifyID: track.id,
+              isrc: track.external_ids?.isrc || null,
+              title: track.name,
+              artist: track.artists[0]?.name || "Unknown Artist",
+            };
+          }
+          return null;
+        })
+        .filter((item) => item !== null);
+
+      return result;
+    } catch (error) {
+      console.error("Błąd w convertTrackID:", error.message);
+      throw error;
+    }
+  },
 };
 
 export default Spotify;
