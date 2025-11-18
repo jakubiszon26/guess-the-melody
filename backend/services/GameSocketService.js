@@ -56,5 +56,24 @@ export function setupSocketLogic(fastify) {
         });
       }
     });
+    socket.on("host_start_game", async (code, callback) => {
+      const gameID = await fastify.redis.get(code.toString());
+      if (gameID) {
+        const rawData = await fastify.redis.get(gameID);
+        if (rawData) {
+          const plainObject = JSON.parse(rawData);
+          const gameState = new GameState(null, {
+            gameLenght: 0,
+            gamePlayers: 0,
+            tracks: [],
+          });
+          Object.assign(gameState, plainObject);
+          gameState.startGame();
+          if (gameState.gameStarted) {
+            fastify.io.to(gameID).emit("game_started", gameState.gameStarted);
+          }
+        }
+      }
+    });
   });
 }

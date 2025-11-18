@@ -1,5 +1,5 @@
 import { useForm } from "react-hook-form";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
@@ -42,6 +42,8 @@ const formSchema = z.object({
 
 const JoinGameForm = () => {
   const [joined, setJoined] = useState(false);
+  const [gameStarted, setGameStarted] = useState(false);
+
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -64,6 +66,20 @@ const JoinGameForm = () => {
       setJoined(response.success);
     });
   };
+
+  useEffect(() => {
+    if (joined) {
+      socket.on("game_started", (data) => {
+        setGameStarted(data);
+      });
+      return () => {
+        socket.off("game_started");
+      };
+    }
+  }, [joined]);
+  if (gameStarted) {
+    return <p>Game started dear player</p>;
+  }
   if (joined) {
     return (
       <div className="flex w-full min-h-screen items-center justify-center p-6">

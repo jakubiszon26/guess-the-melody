@@ -1,6 +1,5 @@
 import axios from "axios";
 
-// Twoja funkcja pomocnicza
 async function deezerGet(endpoint, data) {
   if (!data) {
     data = {};

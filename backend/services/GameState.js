@@ -24,6 +24,10 @@ export class GameState {
     this.hostID = socketID;
   }
 
+  startGame() {
+    this.gameStarted = true;
+  }
+
   addPlayedTrack(trackID) {
     const tracksPlayedCount = this.playedTracks.push(trackID);
     this.currentRound = tracksPlayedCount + 1;
