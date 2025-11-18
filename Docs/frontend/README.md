@@ -2,101 +2,118 @@
 
 ## Overview
 
-The frontend is a React application bootstrapped with Vite and styled via custom components plus Shadcn UI primitives (alert dialog, form, label). Data fetching relies on `@tanstack/react-query` so that authentication status, Spotify profile data, playlists, playback state, game sessions, and lobby codes all share a consistent caching strategy. Routing is powered by `react-router-dom` and guarded with custom wrappers to ensure only authenticated players can reach gameplay surfaces, while Socket.io keeps the lobby player list synchronized.
+The frontend is a Vite-powered React application that uses React Router for navigation, React Query for data orchestration, Socket.io for live lobby sync, and Shadcn UI primitives for consistent styling. Authentication, Spotify data, and game lifecycle state all flow through axios helpers located in `src/api`, each configured with `withCredentials: true` so the `session_token` cookie automatically accompanies every request.
 
-## Authentication Flow
+## Application Layout & Routing
 
-The login journey orchestrates Spotify OAuth, backend callbacks, and React Query cache invalidation.
+- `App.jsx` bootstraps global queries (`checkAuth`, `fetchUserProfile`, `fetchPlaylists`, `fetchPlayingTrack`, `getSession`) and gates authenticated routes with `ProtectedRoute`.
+- `ProtectedLayout` renders `AppSidebar` plus an `<Outlet>` so nested pages share the sidebar shell.
+- **Route summary:**
+  | Path | Element | Notes |
+  | --- | --- | --- |
+  | `/login` | `<LoginView />` | Public. Redirects to `/` if already authenticated. |
+  | `/` (index) | `<GameDashboard />` | Requires auth. Hosts playlist selection + lobby creation. |
+  | `/lobby` | `<GameLobby />` | Protected by auth **and** `gameSession`. Displays join code + roster. |
+  | `/join` | `<JoinGamePage />` | Public guest entry; validates code/name before joining via Socket.io. |
+  | `*` | `<Navigate .../>` | Redirects back to `/login` or `/` depending on auth state. |
 
-1. **Start Login:**
-   - The `LoginView` component links to `getSpotifyLoginUrl()` from `src/api/spotifyApi.js`, which returns `http://127.0.0.1:3001/users/get-spotify-login-url`.
-   - Clicking the CTA navigates the browser to the Spotify consent page with the required scopes.
-2. **Spotify Consent:**
-   - After the player grants access, Spotify redirects to the backend’s `/users/getToken` endpoint with a `code` query string.
-3. **Token Exchange & Session Cookie:**
-   - The backend swaps the `code` for Spotify access/refresh tokens, stores them, signs a JWT, and returns `{ login: "success" }` while setting the `session_token` httpOnly cookie.
-4. **React Query Revalidation:**
-   - The frontend calls `checkAuth()` via React Query’s `useQuery({ queryKey: ["authentication"], queryFn: checkAuth })`. When the cookie is present, the hook resolves to `true` and gatekeeping components re-render.
-5. **Authenticated Data Fetches:**
-   - Follow-up queries (profile, playlists, currently playing track, active lobby via `getSession`) use the same `withCredentials` axios configuration so the cookie travels with every request.
-6. **Logout Handling:**
-   - No explicit logout endpoint exists yet. Clearing the cookie (e.g., via browser dev tools) or letting it expire flips `checkAuth` back to `false`, sending the player to `/login`.
+Route guards rely on the React Query result of `checkAuth`. Until that promise resolves `true`, all downstream queries are disabled via the `enabled` option so no protected call fires prematurely.
 
-## Routing Flow
+## Authentication Flow (Frontend Perspective)
 
-Routing is centralized in `src/App.jsx`. Authentication state flows into guard components that wrap the layout tree.
+1. **Launch Login:** `LoginView` shows the `SpotifyAuth` button, which calls `getSpotifyLoginUrl()` and replaces `window.location.href` to start the OAuth flow.
+2. **Handle Callback:** When Spotify redirects back with a `code`, `SpotifyAuth` detects it via `URLSearchParams`, calls `exchangeCodeForToken(code)`, and waits for `{ login: "success" }`.
+3. **Revalidate State:** On success the component refetches the `authentication` React Query, clears the `?code=...` from the URL, and navigates to `/`. Downstream queries (`userData`, `playlists`, `playingTrack`, `session`) automatically re-run because their `enabled` flag becomes truthy.
+4. **Session Usage:** Every other axios helper includes `withCredentials: true`, so the `session_token` httpOnly cookie is implicitly attached. No explicit logout exists yet; clearing the cookie forces `checkAuth` to return `false` and navigates the user back to `/login`.
 
-### Core Components
+## Data Fetching & Local State
 
-- **`ProtectedRoute`**
+- **React Query keys:**
+  - `['authentication']` → `checkAuth`
+  - `['userData']` → `fetchUserProfile`
+  - `['playlists']` → `fetchPlaylists`
+  - `['playingTrack']` → `fetchPlayingTrack` (custom refetch interval based on remaining track duration)
+  - `['session']` → `getSession`
+  - `['gamecode']` → `getGameCode`
+- **Local state in `GameDashboard`:** `selectedPlaylist`, `playerCount`, `gameLength`. These shape the `gameSettings` object sent to `/game/request-new-game`.
+- **Cache invalidation:** After `requestNewGame` resolves, the dashboard invalidates `['session']` so `/lobby` reflects the latest Redis snapshot.
 
-  - Props: `isAllowed`, `redirectTo`, `children`.
-  - Behavior: If `isAllowed` is falsy, it returns `<Navigate to={redirectTo} replace />`; otherwise, it renders its children.
-  - Usage: Wraps the `/` route tree and the `/lobby` page.
-
-- **`ProtectedLayout`**
-  - Props: `userData`, `playingTrack`, `userPlaylists`, `setSelectedPlaylist`, `gameSettings`.
-  - Behavior: Renders the `SidebarProvider`, `AppSidebar`, and an `<Outlet>` container for nested routes. Mobile-friendly header toggles the sidebar.
-  - Usage: Root element of the authenticated portion of the app so nested pages inherit the sidebar + layout chrome.
-
-### Route Map
-
-| Path        | Element                                                     | Notes                                                                                                           |
-| ----------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `/login`    | `<LoginView />` or redirect to `/` if already authenticated | Public route.                                                                                                   |
-| `/`         | `<ProtectedRoute><ProtectedLayout /></ProtectedRoute>`      | Houses the dashboard and any future authenticated child routes.                                                 |
-| `/` (index) | `<GameDashboard />`                                         | Nested child rendered via `<Outlet>`. Receives playlist/game state setters and session props.                   |
-| `/lobby`    | `<ProtectedRoute><GameLobby /></ProtectedRoute>`            | Requires authentication plus an existing session. Displays the shareable `gameCode`.                            |
-| `/join`     | `<JoinGamePage />`                                          | Public entry point for guests. Validates the code/name with React Hook Form + zod, then uses Socket.io to join. |
-| `*`         | `<Navigate to={isAuthenticated ? "/" : "/login"} />`        | Catch-all guard aligning unknown paths with auth status.                                                        |
-
-### Data Fetch Integration
-
-- Authentication gate (`checkAuth`) runs first. Its `isAuthenticated` result gates all other queries via the `enabled` flag.
-- `fetchUserProfile`, `fetchPlaylists`, `fetchPlayingTrack`, `getSession`, and `getGameCode` all depend on the auth query succeeding and re-run automatically when the cookie status changes.
-- `GameDashboard` uses local state (`selectedPlaylist`, `playerCount`, `gameLength`) to compose `gameSettings`, which the `Start Game` CTA posts to the backend. After creation it invalidates the `session` query to ensure `/lobby` reflects the latest state.
-
-## API Client Reference
-
-All API helpers live under `src/api`. They centralize axios usage with `withCredentials: true` so cookies accompany every call.
-
-### `src/api/gameApi.js`
-
-| Function                       | Description                                                                                                                                 | Parameters                                                                      | Returns                                                         |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| `requestNewGame(gameSettings)` | Posts to `POST /game/request-new-game` to persist a lobby in Redis. Returns `{ created, gameID, gameCode }` so the host can share the code. | `gameSettings` (object) – includes playlist metadata, player count, and length. | Resolves with the backend JSON response or throws on failure.   |
-| `getSession()`                 | Calls `GET /game/session` to recover the active lobby for the authenticated user. Useful for deciding if `/lobby` should be accessible.     | None.                                                                           | Resolves with `{ gameSession }` or `null` if no session exists. |
-| `getGameCode()`                | Calls `GET /game/get-game-code` to hydrate the lobby view with the numeric join code that is stored alongside the session in Redis.         | None.                                                                           | Resolves with a number or throws if no active session.          |
+## Spotify & Game API Clients
 
 ### `src/api/spotifyApi.js`
 
-| Function                              | Description                                                                                                                                    | Parameters                           | Returns                                              |
-| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ---------------------------------------------------- |
-| `getSpotifyLoginUrl()`                | Returns the backend URL that initiates the Spotify OAuth redirect.                                                                             | None.                                | `string` login URL.                                  |
-| `exchangeCodeForToken(code)`          | Calls `GET /users/getToken` with the provided authorization code. On success, the backend sets the session cookie.                             | `code` (string).                     | `boolean` indicating whether `{ login: "success" }`. |
-| `fetchUserProfile()`                  | Retrieves the current user profile via `GET /users/fetch-user-profile`.                                                                        | None.                                | Spotify profile object or `null` on error.           |
-| `checkAuth()`                         | Verifies the session cookie via `GET /users/checkAuth`.                                                                                        | None.                                | `true` when authenticated, otherwise `false`.        |
-| `fetchPlayingTrack()`                 | Calls `GET /music/currently-playing` for playback state, using the dynamic refetch interval defined in `App.jsx`.                              | None.                                | Spotify playback payload or `null`.                  |
-| `getTrackInfo(trackId)`               | Calls the (yet-to-be-implemented) backend route `/music/get-track-info` with `id` query param. Placeholder for future detailed track views.    | `trackId` (string).                  | Track metadata or `null`.                            |
-| `getAccessToken()`                    | Requests `/users/getAccessToken` (not yet implemented) to expose the stored Spotify token. Useful for debugging but currently expected to 404. | None.                                | Intended to return token info.                       |
-| `fetchPlaylists()`                    | Calls `GET /music/get-user-playlists` to populate the sidebar.                                                                                 | None.                                | Spotify playlists response or `null`.                |
-| `getTracksFromPlaylist(playlistData)` | Fetches tracks for the selected playlist via `GET /music/get-tracks-from-playlist` with `playlistID`.                                          | `playlistData` (object with `id`).   | Playlist tracks payload or `null`.                   |
-| `findPrieviewUrl(track, artist)`      | Queries `/music/find-preview-url` (not yet implemented) to look up preview snippets. Currently serves as a stub for future enhancements.       | `track` (string), `artist` (string). | `{ previewUrl }` or `null`.                          |
+| Function                                            | Purpose                                                                                                 | Notes                                    |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `getSpotifyLoginUrl()`                              | Returns `http://127.0.0.1:3001/users/get-spotify-login-url` for the login button.                       | No args.                                 |
+| `exchangeCodeForToken(code)`                        | Hits `/users/getToken?code=...`, waits for `{ login: "success" }`, and resolves `true`/`false`.         | Triggers backend to set `session_token`. |
+| `checkAuth()`                                       | Calls `/users/checkAuth`; drives `ProtectedRoute`.                                                      | Returns `boolean`.                       |
+| `fetchUserProfile()`                                | Proxies `/users/fetch-user-profile` for avatar + sidebar info.                                          | Returns Spotify profile or `null`.       |
+| `fetchPlaylists()`                                  | Retrieves playlists for sidebar selection.                                                              | Depends on auth.                         |
+| `fetchPlayingTrack()`                               | Calls `/music/currently-playing`; refetch interval calibrated to remaining track duration.              | Returns playback payload or `null`.      |
+| `getTracksFromPlaylist(playlist)`                   | Loads playlist tracks to validate game length options.                                                  | Requires `playlist.id`.                  |
+| `getTrackInfo`, `getAccessToken`, `findPrieviewUrl` | Referenced for future enhancements; backend routes do not exist yet, so callers should expect failures. |
+
+### `src/api/gameApi.js`
+
+| Function                       | Purpose                                                                                                                                 |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `requestNewGame(gameSettings)` | Posts `{ gameSettings }` to `/game/request-new-game`. Expects `{ created, gameID, gameCode }` and triggers host navigation to `/lobby`. |
+| `getSession()`                 | Fetches `/game/session` to decide whether to show the “Return to the game” prompt on the dashboard.                                     |
+| `getGameCode()`                | Retrieves `/game/get-game-code` for rendering inside `GameLobby`. Throws if no active session exists.                                   |
 
 ### `src/api/socket.js`
 
-Creates a single Socket.io client instance configured with `autoConnect: false` and `withCredentials: true`. Pages call `socket.connect()` before emitting `join_game` so both hosts and guests join the same room without duplicating connection logic.
+Exports a singleton Socket.io client:
 
-## Component Interaction Notes
+```js
+export const socket = io("http://127.0.0.1:3001", {
+  autoConnect: false,
+  withCredentials: true,
+});
+```
 
-- `AppSidebar` consumes `userPlaylists`, `setSelectedPlaylist`, and `gameSettings`, enabling users to pick the playlist before launching a game.
-- `GameDashboard` pulls tracks from the selected playlist, enforces minimum track counts for each game length, and calls `requestNewGame`. After the Promise resolves with `{ created: true }`, it invalidates the `session` query and navigates to `/lobby` using `useNavigate`.
-- `GameLobby` uses `useQuery({ queryKey: ["gamecode"], queryFn: getGameCode })` to show the current lobby code, then connects to Socket.io, emits `join_game` as the host, and listens for `update_players` to render the roster inside a `ScrollArea`.
-- `JoinGamePage` renders a two-field form (code + nickname) powered by `react-hook-form` with `zodResolver`. On submit it ensures the socket is connected, emits `join_game`, and surfaces validation errors returned by the server.
-- Shared form primitives (`Form`, `FormField`, `FormItem`, `FormLabel`, etc.) wrap the Shadcn components so future forms can reuse the same validation/error UX across the app.
+Pages call `socket.connect()` immediately before emitting events so connections are only established when necessary.
 
-## Extensibility Considerations
+## Game Lifecycle (UI + WebSocket Coordination)
 
-- Implementing logout can be achieved by adding a backend route that clears the `session_token` cookie and invalidates the JWT.
-- `getTrackInfo`, `getAccessToken`, and `findPrieviewUrl` require matching Fastify routes; until they exist, callers should handle rejected Promises.
-- Socket.io hooks in `GameSocketService` can dispatch events to the lobby once the frontend adds a socket client.
+1. **Playlist Preparation:** `AppSidebar` lets hosts pick a playlist. `GameDashboard` fetches its tracks, enforces minimum counts per `gameLength`, and exposes sliders/buttons to configure `playerCount` + `gameLength`.
+2. **Lobby Creation:** Clicking **Start Game** calls `requestNewGame(gameSettings)`. On success the app invalidates `['session']` and routes to `/lobby`.
+3. **Host Lobby View (`GameLobby`):**
+   - React Query fetches `gameCode`.
+   - On mount: `socket.connect()`, emit `join_game(gameCode, 'Host')`.
+   - Listen for `update_players` to keep the roster synchronized and for `game_started` to toggle UI.
+   - Emit `host_start_game(gameCode)` when the host clicks the Start button.
+4. **Guest Join Flow (`JoinGamePage`):**
+   - `react-hook-form` + `zod` validate a six-digit code and nickname (must not equal “Host”).
+   - On submit: ensure socket is connected, emit `join_game(code, username, callback)`.
+   - Display server-side validation errors via `form.setError` when the callback signals `{ success: false }`.
+   - Once joined, listen for `game_started` to know when to transition away from the waiting message.
+5. **Real-time Updates:** The backend emits `update_players` and `game_started` based on lobby events. Both `GameLobby` and `JoinGamePage` subscribe to these events and clean up listeners on unmount to avoid leaks.
+
+## UI Building Blocks
+
+- **Shadcn components:** `Card`, `Button`, `Badge`, `Slider`, `ScrollArea`, `Form`, etc., provide consistent styling across dashboards and forms.
+- **Sidebar system:** `SidebarProvider`, `SidebarTrigger`, and `AppSidebar` wrap the main layout, showing playlists, active track info, and quick actions.
+- **Form helpers:** `FormField`, `FormItem`, and `FormMessage` centralize validation feedback.
+
+## Key Frontend Functions & Components
+
+| Item             | Location                         | Description                                                                                                                                                  |
+| ---------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `SpotifyAuth`    | `src/components/SpotifyAuth.jsx` | Detects `code` params, exchanges them for cookies, and navigates to `/`.                                                                                     |
+| `ProtectedRoute` | `src/App.jsx`                    | Redirects unauthenticated users to `/login`.                                                                                                                 |
+| `GameDashboard`  | `src/pages/GameDashboard.jsx`    | Fetches playlist tracks, handles slider/button inputs, calls `requestNewGame`, and prevents duplicate lobbies by short-circuiting when `gameSession` exists. |
+| `GameLobby`      | `src/pages/GameLobby.jsx`        | Displays join code, renders live player list, and emits `host_start_game`.                                                                                   |
+| `JoinGamePage`   | `src/pages/JoinGamePage.jsx`     | Guest entry form with inline validation and socket coordination.                                                                                             |
+
+## Testing & Troubleshooting Tips
+
+- Use browser dev tools to clear the `session_token` cookie while developing logout flows; React Query will automatically re-run `checkAuth` and redirect to `/login`.
+- When sockets misbehave, confirm that both host and guest tabs call `socket.connect()` **before** emitting events. The client is initialized with `autoConnect: false`, so forgetting this step results in silent no-ops.
+- For playlist/game creation bugs, inspect the network tab for `/game/request-new-game` responses and ensure the `gameSettings` payload includes `gameLenght`, `gamePlayers`, and `tracks` as expected by the backend `GameState` constructor.
+
+## Future Enhancements
+
+- Add a logout button that clears the cookie and invalidates related queries.
+- Implement the missing backend routes (`/music/get-track-info`, `/music/find-preview-url`, `/users/getAccessToken`) or remove the corresponding API helper stubs until they exist.
+- Persist `gameStarted` status back into Redis inside the socket handler so reconnecting clients can detect in-progress games without relying solely on real-time events.

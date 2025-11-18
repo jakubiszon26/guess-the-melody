@@ -2,28 +2,28 @@
 
 ## Overview
 
-The backend is built with Fastify and centralizes authentication, Spotify data access, and multiplayer game orchestration. It exposes REST endpoints grouped by domain (`users`, `music`, `game`), persists user data in MongoDB via Mongoose models, stores transient game state in Redis, and authenticates browser clients with JWT cookies. Socket.io is mounted on the Fastify instance to enable near real-time game coordination.
+The backend is a Fastify server that owns Spotify authentication, music catalog queries, and multiplayer game orchestration. HTTP endpoints are grouped under `/users`, `/music`, and `/game`. MongoDB (via Mongoose) stores long-lived user records, Redis caches short-lived `GameState` snapshots, and Socket.io enables low-latency lobby coordination. All sensitive HTTP routes rely on a JWT stored in the `session_token` httpOnly cookie.
 
 ## Runtime Architecture
 
-- **Fastify Core:** Hosts all HTTP endpoints, applies CORS, cookies, and JWT verification.
-- **MongoDB:** Stores Spotify-linked user records with credentials managed through `userService`.
-- **Redis:** Caches `GameState` payloads for fast lookup during a session.
-- **Socket.io:** Wired through `setupSocketLogic` to coordinate lobby membership. Hosts and guests join rooms via the `join_game` event so player rosters stay in sync in real time.
-- **Spotify Web API:** Accessed via `spotifyService` helpers for profile, playlist, and track data.
+- **Fastify Core:** Registers cookies, CORS, and JWT plugins, then mounts the users/music/game route files.
+- **MongoDB:** Persists Spotify-linked players with their latest access/refresh tokens (`userModel`).
+- **Redis:** Stores serialized `GameState` instances under `game:{spotifyID}` plus a numeric code key `<gameCode>` for quick joins. Entries expire after 7,200 seconds.
+- **Socket.io:** Decorated onto Fastify’s HTTP server; `setupSocketLogic` handles real-time lobby events.
+- **Spotify Web API:** Accessed through `spotifyService` helpers for profile, playlist, track, and token operations.
 
-## API Reference
+## API Documentation
 
-All routes live under `/users`, `/music`, or `/game`. Unless noted otherwise, responses are JSON and protected endpoints require a valid `session_token` httpOnly cookie created during login.
+All responses are JSON unless noted. Any route decorated with `fastify.authenticate` requires the `session_token` cookie that is issued during login.
 
-### Users API (`backend/routes/users.js`)
+### Users Service (`backend/routes/users.js`)
 
 #### `GET /users/get-spotify-login-url`
 
-- **Description:** Builds the Spotify OAuth URL with the required scopes and issues an HTTP redirect so the browser can start the authorization flow.
-- **Authentication:** Not required.
-- **Parameters:** None.
-- **Success Response:** `302 Found` redirecting to `https://accounts.spotify.com/authorize?...`.
+- **Description:** Redirects the caller to Spotify’s OAuth consent page with the required scopes.
+- **Authentication:** None.
+- **Parameters:** _(none)_
+- **Success Response:** HTTP 302 redirect to `https://accounts.spotify.com/authorize?...`.
 - **Error Response:**
   ```json
   { "error": "Unable to generate login URL" }
@@ -31,12 +31,12 @@ All routes live under `/users`, `/music`, or `/game`. Unless noted otherwise, re
 
 #### `GET /users/getToken`
 
-- **Description:** Spotify callback endpoint. Exchanges the `code` query param for access/refresh tokens, upserts the user in MongoDB, signs a JWT session, and sets it as the `session_token` cookie.
-- **Authentication:** Not required (called by Spotify).
+- **Description:** Spotify callback handler. Exchanges the `code` query param for tokens, upserts/creates the MongoDB user, signs a JWT, and sets it as `session_token`.
+- **Authentication:** None (Spotify calls it).
 - **Parameters:**
   | Name | Type | Location | Description |
   | --- | --- | --- | --- |
-  | `code` | string | query | Authorization code returned by Spotify after the user accepts scopes. |
+  | code | string | query | Authorization code returned by Spotify. |
 - **Success Response:**
   ```json
   { "login": "success" }
@@ -48,23 +48,17 @@ All routes live under `/users`, `/music`, or `/game`. Unless noted otherwise, re
 
 #### `GET /users/checkAuth`
 
-- **Description:** Lightweight guard that verifies the JWT and returns whether the client is authenticated.
+- **Description:** Ensures the JWT cookie is valid and signals authentication status.
 - **Authentication:** Required.
-- **Parameters:** None.
-- **Success Response:**
-  ```json
-  { "authenticated": true }
-  ```
-- **Error Response:**
-  ```json
-  { "error": "Unauthorized" }
-  ```
+- **Parameters:** _(none)_
+- **Success Response:** `{ "authenticated": true }`
+- **Error Response:** `{ "error": "Unauthorized" }`
 
 #### `GET /users/fetch-user-profile`
 
-- **Description:** Retrieves the stored Spotify access token, calls `Spotify.me`, and returns profile metadata for the signed-in user.
+- **Description:** Pulls a fresh Spotify access token from MongoDB/Redis, proxies `GET /v1/me`, and returns the Spotify profile payload.
 - **Authentication:** Required.
-- **Parameters:** None.
+- **Parameters:** _(none)_
 - **Success Response:**
   ```json
   {
@@ -74,220 +68,145 @@ All routes live under `/users`, `/music`, or `/game`. Unless noted otherwise, re
     "images": [{ "url": "https://.../avatar.jpg" }]
   }
   ```
-- **Error Response:**
-  ```json
-  { "error": "Failed to fetch profile" }
-  ```
+- **Error Response:** `{ "error": "Failed to fetch profile" }`
 
-### Music API (`backend/routes/music.js`)
+### Music Service (`backend/routes/music.js`)
 
 #### `GET /music/currently-playing`
 
-- **Description:** Uses the stored Spotify token to proxy `GET /v1/me/player/currently-playing`, returning the raw payload or `{ is_playing: false }` when Spotify replies with HTTP 204.
+- **Description:** Proxies Spotify’s `GET /v1/me/player/currently-playing`. Sends `{ "is_playing": false }` when Spotify returns HTTP 204.
 - **Authentication:** Required.
-- **Parameters:** None.
-- **Success Response:**
-  ```json
-  {
-    "is_playing": true,
-    "progress_ms": 61000,
-    "item": {
-      "name": "Song Title",
-      "duration_ms": 180000,
-      "artists": [{ "name": "Artist" }]
-    }
-  }
-  ```
-- **Error Response:**
-  ```json
-  { "error": "Failed to fetch currently playing track" }
-  ```
+- **Parameters:** _(none)_
+- **Success Response:** Spotify’s full currently-playing payload.
+- **Error Response:** `{ "error": "Failed to fetch currently playing track" }`
 
 #### `GET /music/get-user-playlists`
 
-- **Description:** Calls `Spotify.playlists` to list the authenticated user’s playlists.
+- **Description:** Returns the authenticated user’s playlists via `Spotify.playlists`.
 - **Authentication:** Required.
-- **Parameters:** None.
-- **Success Response:**
-  ```json
-  {
-    "items": [
-      {
-        "id": "playlist_id",
-        "name": "Gym Mix",
-        "images": [{ "url": "https://.../cover.jpg" }]
-      }
-    ]
-  }
-  ```
-- **Error Response:**
-  ```json
-  { "error": "couldnt get user playlists" }
-  ```
+- **Parameters:** _(none)_
+- **Success Response:** Spotify playlist collection (items with `id`, `name`, `images`, etc.).
+- **Error Response:** `{ "error": "couldnt get user playlists" }`
 
 #### `GET /music/get-several-tracks`
 
-- **Description:** Accepts a comma-delimited list of track IDs and proxies `Spotify.tracks` to fetch them in bulk.
+- **Description:** Fetches up to 50 tracks at a time using `Spotify.tracks`.
 - **Authentication:** Required.
 - **Parameters:**
   | Name | Type | Location | Description |
   | --- | --- | --- | --- |
-  | `ids` | string | query | Comma-separated Spotify track IDs (max 50 per Spotify API). |
-- **Success Response:**
-  ```json
-  {
-    "tracks": [{ "id": "trackId", "name": "Track", "preview_url": "..." }]
-  }
-  ```
-- **Error Response:**
-  ```json
-  { "error": "ERROR IN /get-several-tracks" }
-  ```
+  | ids | string | query | Comma separated Spotify track IDs (max 50). |
+- **Success Response:** `{ "tracks": [ { "id": "..." } ] }`
+- **Error Response:** `{ "error": "ERROR IN /get-several-tracks" }`
 
 #### `GET /music/get-tracks-from-playlist`
 
-- **Description:** Fetches the tracks inside a given playlist via `Spotify.playlistTracks` and returns Spotify’s response.
+- **Description:** Loads playlist tracks via `Spotify.playlistTracks(playlistID)`.
 - **Authentication:** Required.
 - **Parameters:**
   | Name | Type | Location | Description |
   | --- | --- | --- | --- |
-  | `playlistID` | string | query | Spotify playlist identifier whose tracks should be loaded. |
-- **Success Response:**
-  ```json
-  {
-    "items": [
-      {
-        "track": {
-          "id": "trackId",
-          "name": "Track Name",
-          "album": { "images": [{ "url": "https://.../art.jpg" }] }
-        }
-      }
-    ]
-  }
-  ```
-- **Error Response:**
-  ```json
-  { "error": "ERROR IN /get-several-tracks" }
-  ```
+  | playlistID | string | query | Playlist identifier to inspect. |
+- **Success Response:** Spotify playlist track payload (`items[].track`).
+- **Error Response:** `{ "error": "ERROR IN /get-several-tracks" }`
 
-### Game API (`backend/routes/game.js`)
+#### `GET /music/get-ids-from-playlist`
+
+- **Description:** Returns only the track IDs for the requested playlist.
+- **Authentication:** Required.
+- **Parameters:** `playlistID` (query).
+- **Success Response:** `[ "1abc", "2def" ]`
+- **Error Response:** `{ "error": "ERROR IN /get-ids-from-playlist" }`
+
+#### `GET /music/convert-spotify-to-isrcs`
+
+- **Description:** Breaks large `ids` lists into 50-track batches, fetches details, and maps Spotify IDs to ISRCs/title/artist metadata.
+- **Authentication:** Required.
+- **Parameters:** `ids` (query) – comma separated Spotify IDs.
+- **Success Response:** Array of `{ spotifyID, isrc, title, artist }` documents.
+- **Error Response:** `{ "error": "ERROR IN /convert-spotify-to-isrcs" }`
+
+#### `POST /music/get-preview-from-deezer`
+
+- **Description:** Given a `tracksArray` and `index`, queries Deezer by ISRC or artist/title to locate a 30s preview.
+- **Authentication:** Required.
+- **Body Parameters:** `tracksArray` (array), `index` (number).
+- **Success Response:** `{ "previewUrl": "https://.../stream.mp3" }`
+- **Error Response:** e.g. `{ "error": "index missing or type error" }`
+
+### Game Service (`backend/routes/game.js`)
 
 #### `POST /game/request-new-game`
 
-- **Description:** Initializes a `GameState` for the authenticated host, persists it in Redis for two hours, links a six digit `gameCode` to the lobby, and returns both identifiers so the host can share the code.
+- **Description:** Creates a `GameState` for the authenticated host, assigns a random six-digit code, and persists both `game:{spotifyID}` and `<code>` Redis keys (TTL 7200s).
 - **Authentication:** Required.
 - **Body Parameters:**
-  | Name | Type | Location | Description |
-  | --- | --- | --- | --- |
-  | `gameSettings` | object | body | Structure describing the chosen playlist, number of players, game length, etc. |
-- **Success Response:**
-  ```json
-  {
-    "created": true,
-    "gameID": "game:spotify_user",
-    "gameCode": 123456
-  }
-  ```
-- **Error Response:**
-  ```json
-  { "error": "Failed to create game" }
-  ```
+  | Name | Type | Description |
+  | --- | --- | --- |
+  | gameSettings | object | Expected to contain `gameLenght`, `gamePlayers`, and `tracks`. |
+- **Success Response:** `{ "created": true, "gameID": "game:host", "gameCode": 123456 }`
+- **Error Response:** `{ "error": "Failed to create game" }`
 
 #### `GET /game/session`
 
-- **Description:** Looks up the Redis entry for the current user (`game:{spotifyID}`) and returns the stored session snapshot if present.
+- **Description:** Loads the host’s serialized `GameState` from Redis to determine whether a lobby already exists.
 - **Authentication:** Required.
-- **Parameters:** None.
-- **Success Response:**
-  ```json
-  {
-    "gameSession": {
-      "gameID": "game:spotify_user",
-      "hostSpotifyID": "spotify_user",
-      "gameLenght": "short",
-      "players": {}
-    }
-  }
-  ```
-- **Error Response:**
-  ```json
-  { "error": "Failed to load session" }
-  ```
+- **Success Response:** `{ "gameSession": { ...GameState } }`
+- **Error Response:** `{ "error": "Failed to load session" }`
 
 #### `GET /game/get-game-code`
 
-- **Description:** Looks up the current host’s `GameState` in Redis and returns the generated lobby code so it can be displayed inside the lobby UI.
+- **Description:** Convenience endpoint that returns just the numeric `gameCode` for the authenticated host.
 - **Authentication:** Required.
-- **Parameters:** None.
-- **Success Response:**
-  ```json
-  { "code": 123456 }
-  ```
-- **Error Response:**
-  ```json
-  { "error": "Failed to load session" }
-  ```
+- **Success Response:** `{ "code": 123456 }`
+- **Error Response:** `{ "error": "Failed to load session" }`
 
-## Service Layer Reference (`backend/services/*.js`)
+## WebSocket Game Flow (`backend/services/GameSocketService.js`)
 
-### `GameState`
+| Event             | Direction       | Payload                   | Description                                                                                                                                                                               |
+| ----------------- | --------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `join_game`       | Client ➜ Server | `(code, name, callback?)` | Resolves `code` to a Redis `gameID`, rehydrates `GameState`, assigns host/player membership, persists the updated state, and emits `update_players`. Host joins by sending name `"Host"`. |
+| `host_start_game` | Client ➜ Server | `(code)`                  | Marks `gameState.gameStarted = true` and emits `game_started` to the room (currently not persisted back to Redis).                                                                        |
+| `update_players`  | Server ➜ Client | `[{ id, name }]`          | Keeps every lobby view synchronized with the latest roster.                                                                                                                               |
+| `game_started`    | Server ➜ Client | `boolean`                 | Signals that the host pressed Start. Both host and guests switch UI accordingly.                                                                                                          |
+| `error`           | Server ➜ Client | `{ message }`             | Generic socket error payload used when a handler throws.                                                                                                                                  |
 
-- **Location:** `backend/services/GameState.js`
-- **Purpose:** In-memory/Redis representation of an active match, keyed by `game:{hostSpotifyID}`.
-- **Constructor Arguments:**
-  - `spotifyID`: Host’s Spotify ID (used to derive `gameID`).
-  - `gameSettings`: Object coming from the frontend. Currently expects `gameLenght`, `gamePlayers`, and `tracks` properties.
-- **Fields:**
-  - `gameID`, `gameCode`, `hostSpotifyID`, `hostID`, `gameLenght`, `maxPlayerCount`, `tracksToPlay`, `playedTracks`, `players`, `scores`, `currentRound`.
-- **Methods:**
-  - `addPlayer(player)`: Inserts a player record keyed by `player.id`.
-  - `playerAddScore(player, score)`: Increments the tracked score for the player.
-  - `addPlayedTrack(trackID)`: Pushes the track into `playedTracks` and advances `currentRound`.
-  - `setHostID(socketID)`: Saves the host’s active socket connection so events can target the right room membership.
+**Lifecycle:**
 
-### `GameSocketService`
+1. Host hits `/lobby`, fetches `gameCode`, connects Socket.io, and emits `join_game(code, "Host")` which stores their socket ID inside `GameState.hostID`.
+2. Guests open `/join`, enter the code/name, and emit `join_game`. Validation failures or missing rooms are surfaced through the callback.
+3. Every join recalculates the players array and broadcasts `update_players` to the room.
+4. Host emits `host_start_game`; all clients listening for `game_started` update local state (e.g., `GameLobby`, `JoinGamePage`).
 
-- **Location:** `backend/services/GameSocketService.js`
-- **Purpose:** Attaches Socket.io listeners via `setupSocketLogic(fastify)`.
-- **Behavior:**
-  - Subscribes to `join_game` events. Hosts emit `(gameCode, "Host")` to claim room ownership and trigger the initial player list broadcast.
-  - Guests emit `(gameCode, playerName, callback)`; the server resolves the numeric code to a `gameID`, rehydrates the `GameState`, assigns a generated name when none is provided, and persists the updated player roster back to Redis.
-  - Emits `update_players` to the Socket.io room whenever the lobby changes so every client stays in sync. Errors are reported to the caller via the optional callback or `socket.emit("error", ...)`.
+## Authentication & Session Management
 
-### `spotifyService`
+1. `GET /users/get-spotify-login-url` redirects to Spotify with scopes `user-read-playback-state`, `user-modify-playback-state`, `user-read-currently-playing`, `streaming`, `user-read-email`, and `user-read-private`.
+2. Spotify calls back into `/users/getToken?code=...`. `spotifyService.getToken` exchanges the code for `access_token`, `refresh_token`, and `expires_in`.
+3. `userService.databaseUpdateTokens` / `databaseCreateUser` persist credentials and profile data, then `generateInternalToken` signs the 7-day JWT stored as `session_token` (httpOnly, sameSite=lax, secure=true in prod).
+4. `fastify.decorate("authenticate", ...)` verifies the cookie for every protected route. Socket.io also relies on the same cookie because clients connect with `withCredentials: true`.
+5. For Spotify calls, `getSpotifyTokenFromDatabase` checks token freshness via `validateSpotifyToken`; expired tokens trigger `spotifyService.refreshToken`, and MongoDB is updated with the new expiry.
+6. Game sessions are persisted in Redis for two hours. Hosts can only run one active lobby at a time (`game:{spotifyID}` key). Guests rely on the numeric code lookup to join.
 
-- **Location:** `backend/services/spotifyService.js`
-- **Responsibility:** Thin wrapper over Spotify Web API endpoints plus Authorization Code flow helpers.
-- **Key Functions:**
-  - `me(token)`: Returns the authenticated user profile.
-  - `playlists(token)`: Lists user playlists.
-  - `tracks(token, data)`: Fetches multiple tracks (`data.ids`).
-  - `playlistTracks(token, playlistID)`: Loads playlist contents.
-  - `getToken(code)`: Exchanges an authorization `code` for `access_token`, `refresh_token`, `expires_in` via Spotify’s token endpoint.
-  - `refreshToken(refreshToken)`: Obtains a fresh access token when the current one expires.
-  - `spotifyGet(...)`: Private helper encapsulating axios GET requests with bearer headers and query serialization.
+## Key Backend Functions
 
-### `userService`
+| Function                                 | Location                        | Description                                                                                                                                                        |
+| ---------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `new GameState(spotifyID, gameSettings)` | `services/GameState.js`         | Seeds lobby metadata (`gameID`, `gameCode`, `tracksToPlay`, `players`, etc.) and exposes helpers like `addPlayer`, `startGame`, `addPlayedTrack`, and `setHostID`. |
+| `setupSocketLogic(fastify)`              | `services/GameSocketService.js` | Attaches `join_game` and `host_start_game` listeners, manages Redis serialization, and emits lobby updates.                                                        |
+| `spotifyService.*`                       | `services/spotifyService.js`    | Wraps Spotify profile/playlist/track fetches plus Authorization Code / refresh token flows.                                                                        |
+| `userService` helpers                    | `services/userService.js`       | Provide user CRUD + token persistence (`checkIfUserExists`, `databaseUpdateTokens`, `generateInternalToken`, `getSpotifyTokenFromDatabase`).                       |
+| `request-new-game` handler               | `routes/game.js`                | Validates auth, creates/persists `GameState`, and returns IDs/codes.                                                                                               |
+| `getSpotifyLoginUrl`, `getToken`, etc.   | `routes/users.js`               | Manage the OAuth handshake and expose lightweight auth guard endpoints.                                                                                            |
 
-- **Location:** `backend/services/userService.js`
-- **Responsibility:** Bridges MongoDB user records, Spotify tokens, and Fastify’s JWT signer.
-- **Key Functions:**
-  - `checkIfUserExists(spotifyID)`: Boolean existence check.
-  - `databaseUpdateTokens(spotifyID, access_token, refresh_token, expires_in)`: Refreshes stored tokens and expiry timestamp.
-  - `databaseCreateUser(...)`: Creates a user document after first login, enriching it with Spotify profile data.
-  - `validateSpotifyToken(spotifyID)`: Confirms whether the stored access token is still valid or needs refreshing.
-  - `generateInternalToken(fastify, user)`: Signs the `session_token` (7-day expiry) containing the Spotify ID.
-  - `getSpotifyTokenFromDatabase(spotifyID)`: Returns a valid token, triggering Spotify refresh logic when necessary.
+## Error Handling
 
-## Error Handling & Logging
+- All route handlers log caught exceptions before replying with a generic `{ "error": message }` payload.
+- Spotify/Deezer/Redis errors surface descriptive messages in the logs to speed up debugging.
+- JWT verification failures always respond with HTTP 401 `{ "error": "Unauthorized" }` so the frontend can redirect to `/login`.
 
-- Operations log to the console when Spotify calls fail or Redis interactions throw.
-- API endpoints surface generic `{ "error": "..." }` payloads. Clients should inspect HTTP status codes to distinguish auth failures (401) from server issues (500).
+## Data & State Lifetimes
 
-## Session & State Management
-
-- JWT cookies authenticate every protected route via Fastify’s `authenticate` decorator.
-- Redis entries created by `POST /game/request-new-game` currently expire after 2 hours (7200 seconds) to prevent stale lobbies.
-- Two keys are stored for each lobby: `game:{spotifyID}` holds the full `GameState`, and `<gameCode>` (stringified) points to the same `gameID`, enabling players to join by code without knowing the host’s ID.
-- Extending gameplay (player joins, scoring) should reuse `GameState` helpers to ensure consistent mutation semantics before persisting back to Redis.
+- **JWT cookie:** 7 days (`fastify-jwt`).
+- **Redis game session:** 7,200 seconds (2 hours) keyed by both `game:{spotifyID}` and the numeric `gameCode` string.
+- **Mongo tokens:** Access token expiry tracked via `spotifyTokenExpiresAt`; refresh token stored indefinitely until Spotify revokes it.
+- **WebSocket connections:** Live only for the current browser tab and automatically cleaned up when the socket disconnects.
