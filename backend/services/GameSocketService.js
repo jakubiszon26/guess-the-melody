@@ -1,6 +1,12 @@
 import { randomInt } from "crypto";
 import { GameState } from "./GameState.js";
-import { startGameEngine } from "./GameEngine.js";
+import {
+  handleRoundEnd,
+  hydrateGameObject,
+  startGameEngine,
+  handlePlayerAnswer,
+} from "./GameEngine.js";
+import { SocketTimeoutDuringMaintenanceError } from "redis";
 
 export function setupSocketLogic(fastify) {
   fastify.io.on("connection", (socket) => {
@@ -60,25 +66,23 @@ export function setupSocketLogic(fastify) {
     socket.on("host_start_game", async (code, callback) => {
       const gameID = await fastify.redis.get(code.toString());
       if (gameID) {
-        const rawData = await fastify.redis.get(gameID);
-        if (rawData) {
-          const plainObject = JSON.parse(rawData);
-          const gameState = new GameState(null, {
-            gameLenght: 0,
-            gamePlayers: 0,
-            tracksArray: [],
-          });
-          Object.assign(gameState, plainObject);
-          gameState.startGame();
-          await fastify.redis.set(gameID, JSON.stringify(gameState));
-          if (gameState.gameStarted) {
-            fastify.io.to(gameID).emit("game_started", gameState.gameStarted);
-          }
+        const gameState = await hydrateGameObject(fastify, gameID);
+        gameState.startGame();
+        await fastify.redis.set(gameID, JSON.stringify(gameState));
+        if (gameState.gameStarted) {
+          fastify.io.to(gameID).emit("game_started", gameState.gameStarted);
         }
       }
     });
     socket.on("host_ready", async (gameID) => {
       await startGameEngine(fastify, gameID);
+    });
+    socket.on("host_round_ended", async (gameID) => {
+      await handleRoundEnd(fastify, gameID);
+    });
+    socket.on("player_answer", async ({ gameID, playerAnswer }) => {
+      console.log("Player answered!");
+      await handlePlayerAnswer(fastify, gameID, socket.id, playerAnswer);
     });
   });
 }

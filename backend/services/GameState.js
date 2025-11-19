@@ -9,6 +9,7 @@ export class GameState {
     this.tracksArray = gameSettings.tracksArray;
     this.playedTracks = []; //indeksy z trackArray.
     this.players = {};
+    this.playerAnswers = {};
     this.scores = {};
     this.currentRound = 0;
   }
@@ -17,7 +18,15 @@ export class GameState {
     this.players[player.id] = { name: player.name, id: player.id };
   }
   playerAddScore(player, score) {
-    this.scores[player.id] += score;
+    const playerId = player.id;
+    if (!this.scores[playerId]) {
+      this.scores[playerId] = {
+        id: playerId,
+        name: player.name,
+        score: 0,
+      };
+    }
+    this.scores[playerId].score += score;
   }
 
   setHostID(socketID) {
@@ -30,5 +39,9 @@ export class GameState {
 
   addPlayedTrack(trackID) {
     this.playedTracks.push(trackID);
+  }
+
+  addPlayerAnswer(player, playerAnswer, answerDateTime) {
+    this.playerAnswers[player.id] = { playerAnswer, answerDateTime };
   }
 }

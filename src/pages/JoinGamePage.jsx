@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/card";
 
 import { socket } from "../api/socket";
-import { replace, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const formSchema = z.object({
   gameCode: z.string().min(4, {
@@ -71,18 +71,27 @@ const JoinGameForm = (props) => {
   };
 
   useEffect(() => {
-    if (isPlayer) {
-      socket.on("game_started", (data) => {
-        setGameStarted(data);
-      });
-      return () => {
-        socket.off("game_started");
-      };
+    if (!isPlayer) {
+      return;
     }
+
+    const handleGameStarted = (data) => {
+      setGameStarted(data);
+    };
+
+    socket.on("game_started", handleGameStarted);
+
+    return () => {
+      socket.off("game_started", handleGameStarted);
+    };
   }, [isPlayer]);
-  if (gameStarted) {
-    navigate("/playerscreen", replace);
-  }
+
+  useEffect(() => {
+    if (gameStarted) {
+      navigate("/playerscreen", { replace: true });
+    }
+  }, [gameStarted, navigate]);
+
   if (isPlayer) {
     return (
       <div className="flex w-full min-h-screen items-center justify-center p-6">

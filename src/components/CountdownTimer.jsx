@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 const formatTime = (ms) => {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));
@@ -9,6 +9,15 @@ const formatTime = (ms) => {
   return `${minutes}:${paddedSeconds}`;
 };
 
+const defer = (cb) => {
+  if (!cb) return;
+  if (typeof queueMicrotask === "function") {
+    queueMicrotask(cb);
+  } else {
+    Promise.resolve().then(cb);
+  }
+};
+
 // 💡 Komponent timera
 const CountdownTimer = ({
   initialTimeInMs = 0,
@@ -16,33 +25,54 @@ const CountdownTimer = ({
   onTimerEnd,
 }) => {
   const [timeRemaining, setTimeRemaining] = useState(initialTimeInMs);
+  const intervalRef = useRef(null);
+  const endCalledRef = useRef(false);
 
   useEffect(() => {
     setTimeRemaining(initialTimeInMs);
+    endCalledRef.current = false;
   }, [initialTimeInMs]);
 
   useEffect(() => {
-    if (!isRunning || initialTimeInMs <= 0) {
-      if (!isRunning && initialTimeInMs > 0) {
-        setTimeRemaining(initialTimeInMs);
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    if (!isRunning) {
+      return;
+    }
+
+    if (initialTimeInMs <= 0) {
+      setTimeRemaining(0);
+      if (!endCalledRef.current) {
+        endCalledRef.current = true;
+        defer(() => onTimerEnd?.());
       }
       return;
     }
 
-    const timerId = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       setTimeRemaining((prevTime) => {
-        const newTime = prevTime - 1000;
-
-        if (newTime <= 0) {
-          clearInterval(timerId);
-          onTimerEnd?.();
-          return 0;
+        const newTime = Math.max(0, prevTime - 1000);
+        if (newTime === 0 && !endCalledRef.current) {
+          endCalledRef.current = true;
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+          defer(() => onTimerEnd?.());
         }
         return newTime;
       });
     }, 1000);
 
-    return () => clearInterval(timerId);
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
   }, [initialTimeInMs, isRunning, onTimerEnd]);
 
   return (
