@@ -16,7 +16,7 @@ const redisClient = createClient({
 });
 await redisClient.connect();
 
-const fastify = Fastify({ logger: true });
+const fastify = Fastify({ logger: true, trustProxy: true });
 await fastify.register(fastifyCookie);
 
 fastify.register(cors, {
