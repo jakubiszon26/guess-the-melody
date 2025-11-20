@@ -35,6 +35,7 @@ const io = new Server(fastify.server, {
     methods: ["GET", "POST"],
     credentials: true,
   },
+  transports: ["polling", "websocket"],
 });
 
 fastify.decorate("io", io);
