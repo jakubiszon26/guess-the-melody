@@ -34,7 +34,7 @@ export function AppSidebar(props) {
       <SidebarHeader>
         <div className="flex items-center gap-2 font-semibold text-lg">
           <GiMusicalNotes />
-          Music Guessing Game
+          Guess the melody
         </div>
       </SidebarHeader>
       <SidebarContent>
