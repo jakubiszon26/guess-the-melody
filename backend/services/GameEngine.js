@@ -2,7 +2,6 @@ import { randomInt } from "crypto";
 import Deezer from "./DeezerService.js";
 import { GameState } from "./GameState.js";
 import fastify from "fastify";
-import { socket } from "../../src/api/socket.js";
 import stringSimilarity from "string-similarity";
 
 export async function hydrateGameObject(fastify, gameID) {

@@ -20,13 +20,17 @@ const fastify = Fastify({ logger: true });
 await fastify.register(fastifyCookie);
 
 fastify.register(cors, {
-  origin: "http://127.0.0.1:3000",
+  origin: [process.env.ORIGIN_URL, "http://127.0.0.1:3000", "localhost:3000"],
   credentials: true,
 });
 
 const io = new Server(fastify.server, {
   cors: {
-    origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
+    origin: [
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+      process.env.ORIGIN_URL,
+    ],
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -58,10 +62,16 @@ fastify.decorate("authenticate", async function (request, reply) {
   }
 });
 
-fastify.listen({ port: 3001 }, (err, address) => {
-  if (err) {
-    console.error(err);
-    process.exit(1);
+fastify.listen(
+  {
+    port: Number(process.env.BACKEND_PORT) || "20992",
+    host: process.env.BACKEND_HOST || "0.0.0.0",
+  },
+  (err, address) => {
+    if (err) {
+      console.error(err);
+      process.exit(1);
+    }
+    console.log(`Server listening at ${address}`);
   }
-  console.log(`Server listening at ${address}`);
-});
+);
