@@ -164,6 +164,7 @@ function App() {
                 gameSettings={gameSettings}
                 gameSession={gameSession}
                 gameSessionLoading={gameSessionLoading}
+                userData={userData}
               />
             }
           />

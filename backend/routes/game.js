@@ -95,5 +95,18 @@ async function gameRoutes(fastify, options) {
       }
     }
   );
+  fastify.post(
+    "/discard-game",
+    { preHandler: [fastify.authenticate] },
+    async function (request, reply) {
+      try {
+        const spotifyID = request.user.spotifyID;
+        await fastify.redis.del(`game:${spotifyID}`);
+        reply.send({ success: true });
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  );
 }
 export default gameRoutes;

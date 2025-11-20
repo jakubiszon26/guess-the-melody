@@ -22,7 +22,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { requestNewGame } from "../api/gameApi";
+import { requestNewGame, discardGame } from "../api/gameApi";
 import { useNavigate } from "react-router-dom";
 const GameDashboard = (props) => {
   const {
@@ -34,6 +34,7 @@ const GameDashboard = (props) => {
     gameSettings,
     gameSession,
     gameSessionLoading,
+    userData,
   } = props;
   const queryClient = useQueryClient();
   const [tracks, setTracks] = useState(null);
@@ -61,11 +62,27 @@ const GameDashboard = (props) => {
             <CardTitle>The game has already started</CardTitle>
           </CardHeader>
           <CardContent>
-            <Button
+            {/* <Button
               variant="outline"
               onClick={() => navigate("/lobby", { replace: true })}
             >
               Return to the game
+            </Button> */}
+            <Button
+              variant="outline"
+              onClick={async () => {
+                try {
+                  await discardGame();
+                  queryClient.setQueryData(["session"], undefined);
+                  await queryClient.invalidateQueries({
+                    queryKey: ["session"],
+                  });
+                } catch (error) {
+                  console.error("Failed to discard game", error);
+                }
+              }}
+            >
+              Discard game
             </Button>
           </CardContent>
         </Card>

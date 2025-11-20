@@ -74,7 +74,8 @@ const GameLobby = (props) => {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Go to *localhost:3000/join * and enter the code
+            Go to https://guess-the-melody-zeta.vercel.app/join and enter the
+            code
           </p>
         </CardContent>
       </Card>

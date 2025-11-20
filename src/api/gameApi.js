@@ -32,6 +32,23 @@ export async function getSession() {
   }
 }
 
+export async function discardGame() {
+  try {
+    const response = await axios.post(
+      apiurl + "discard-game",
+      {},
+      {
+        withCredentials: true,
+      }
+    );
+    console.log(response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Failed to discard game", error);
+    throw error;
+  }
+}
+
 export async function getGameCode() {
   try {
     const response = await axios.get(apiurl + "get-game-code", {

@@ -1,7 +1,6 @@
 import { randomInt } from "crypto";
 import Deezer from "./DeezerService.js";
 import { GameState } from "./GameState.js";
-import fastify from "fastify";
 import stringSimilarity from "string-similarity";
 
 export async function hydrateGameObject(fastify, gameID) {
@@ -47,6 +46,16 @@ export async function startGameEngine(fastify, gameID) {
       console.error("hydration problem");
       return;
     }
+
+    if (
+      (gameState.gameLength === "short" && gameState.currentRound === 2) ||
+      (gameState.gameLength === "mid" && gameState.currentRound === 15) ||
+      (gameState.gameLength === "long" && gameState.currentRound === 30)
+    ) {
+      handleGameFinish(fastify, gameID, gameState);
+      return;
+    }
+
     const nextSong = await chooseRandomSong(gameState);
 
     if (!nextSong) {
@@ -118,6 +127,11 @@ export async function handleRoundEnd(fastify, gameID) {
     lastPlayed: lastPlayedObject,
     scores: gameState.scores,
   });
+}
+
+export async function handleGameFinish(fastify, gameID, gameState) {
+  fastify.io.to(gameID).emit("finish", { scores: gameState.scores });
+  await fastify.redis.del(gameID);
 }
 
 export async function handlePlayerAnswer(
