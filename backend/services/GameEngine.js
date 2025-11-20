@@ -48,7 +48,7 @@ export async function startGameEngine(fastify, gameID) {
     }
 
     if (
-      (gameState.gameLength === "short" && gameState.currentRound === 2) ||
+      (gameState.gameLength === "short" && gameState.currentRound === 7) ||
       (gameState.gameLength === "mid" && gameState.currentRound === 15) ||
       (gameState.gameLength === "long" && gameState.currentRound === 30)
     ) {
