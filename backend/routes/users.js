@@ -21,9 +21,10 @@ async function userRoutes(fastify, options) {
       "user-read-playback-state",
       "user-modify-playback-state",
       "user-read-currently-playing",
-      "streaming",
       "user-read-email",
       "user-read-private",
+      "playlist-read-private",
+      "playlist-read-collaborative",
     ];
     const loginUrl = `${process.env.SPOTIFY_ENDPOINT}?client_id=${
       process.env.SPOTIFY_CLIENT_ID
