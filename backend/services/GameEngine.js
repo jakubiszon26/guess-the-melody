@@ -10,7 +10,7 @@ export async function hydrateGameObject(fastify, gameID) {
 
     const plainObject = JSON.parse(rawData);
     const gameState = new GameState(null, {
-      gameLength: 0,
+      gameLenght: 0,
       gamePlayers: 0,
       tracksArray: [],
       hostSpotifyID: "",
@@ -87,6 +87,10 @@ export async function startGameEngine(fastify, gameID) {
 export async function handleRoundEnd(fastify, gameID) {
   const roundEndDateNow = Date.now();
   const gameState = await hydrateGameObject(fastify, gameID);
+  if (!gameState) {
+    console.error(`handleRoundEnd: missing game state for ${gameID}`);
+    return;
+  }
   const lastPlayedIndex =
     gameState.playedTracks[gameState.playedTracks.length - 1];
   const lastPlayedObject = gameState.tracksArray[lastPlayedIndex];
@@ -106,6 +110,7 @@ export async function handleRoundEnd(fastify, gameID) {
       const timeDifference = roundEndDateNow - playerAnswers[id].answerDateTime;
       score = Math.floor((timeDifference / ROUND_DURATION) * MAX_POINTS);
       score = Math.max(0, Math.min(score, MAX_POINTS));
+      score = (roundEndDateNow - playerAnswers[id].answerDateTime) / 100;
     }
     console.log(
       "clean player: ",
@@ -129,6 +134,10 @@ export async function handleRoundEnd(fastify, gameID) {
 }
 
 export async function handleGameFinish(fastify, gameID, gameState) {
+  if (!gameState) {
+    console.error(`handleGameFinish: missing game state for ${gameID}`);
+    return;
+  }
   fastify.io.to(gameID).emit("finish", { scores: gameState.scores });
   await fastify.redis.del(gameID);
 }
@@ -140,7 +149,10 @@ export async function handlePlayerAnswer(
   playerAnswer
 ) {
   const gameState = await hydrateGameObject(fastify, gameID);
-  // w przyszlosci stworzyc klase player
+  if (!gameState) {
+    console.error(`handlePlayerAnswer: missing game state for ${gameID}`);
+    return;
+  }
   gameState.addPlayerAnswer({ id: socketID }, playerAnswer, Date.now());
   console.log("player answer: ", playerAnswer, "playerID: ", socketID);
   await fastify.redis.set(gameID, JSON.stringify(gameState));
@@ -149,6 +161,10 @@ export async function handlePlayerAnswer(
 }
 
 async function chooseRandomSong(gameState) {
+  if (!gameState) {
+    console.error("chooseRandomSong: missing game state reference");
+    return null;
+  }
   const { tracksArray, playedTracks } = gameState;
 
   const availableIndices = tracksArray

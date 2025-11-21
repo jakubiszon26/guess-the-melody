@@ -97,6 +97,8 @@ export default async function musicRoutes(fastify, options) {
             request.query.playlistID
           );
           reply.send(trackIDs);
+        } else {
+          throw new Error("Missing playlist id");
         }
       } catch (error) {
         console.error("ERROR IN /get-ids-from-playlist:", error);
@@ -116,6 +118,8 @@ export default async function musicRoutes(fastify, options) {
           );
           const isrcs = await Spotify.convertTrackID(token, request.query.ids);
           reply.send(isrcs);
+        } else {
+          throw new Error("No spotify ids.");
         }
       } catch (error) {
         console.error("ERROR IN /convert-spotify-to-isrcs", error);

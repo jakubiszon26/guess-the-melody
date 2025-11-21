@@ -10,10 +10,15 @@ async function gameRoutes(fastify, options) {
       try {
         const spotifyID = request.user.spotifyID;
         const token = await getSpotifyTokenFromDatabase(spotifyID);
-        const gameSettings = request.body.gameSettings;
-        if (spotifyID && gameSettings) {
-          //game settings to tylko selectedPlaylist, playerCount i gameLength
-          //bede musial pobrac piosenki, ktore chce grac. Najlepiej miec je w formie tracksArray
+        const gameSettings = request.body?.gameSettings;
+        if (!gameSettings) {
+          reply.code(400).send({
+            created: false,
+            message: "Missing or invalid game settings payload",
+          });
+          return;
+        }
+        if (spotifyID) {
           const trackIDs = await Spotify.getTrackIDsFromPlaylist(
             token,
             gameSettings.selectedPlaylist.id
@@ -32,7 +37,7 @@ async function gameRoutes(fastify, options) {
           };
 
           const gameState = new GameState(spotifyID, finalGameSettings);
-          const gameCode = randomInt(999999);
+          const gameCode = randomInt(900000) + 100000;
           gameState.gameCode = gameCode;
 
           await fastify.redis.set(gameState.gameID, JSON.stringify(gameState));
@@ -50,6 +55,10 @@ async function gameRoutes(fastify, options) {
             gameCode: gameCode,
           });
         } else {
+          reply.code(401).send({
+            created: false,
+            message: "Missing spotify user identifier",
+          });
         }
       } catch (error) {
         console.error(error);

@@ -24,7 +24,7 @@ import { socket } from "../api/socket";
 import { useNavigate } from "react-router-dom";
 
 const formSchema = z.object({
-  gameCode: z.string().min(4, {
+  gameCode: z.string().regex(/^\d{6}$/, {
     message:
       "Game code is a six digit number. You can find it on your host's screen",
   }),

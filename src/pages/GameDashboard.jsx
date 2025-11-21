@@ -38,7 +38,7 @@ const GameDashboard = (props) => {
   const queryClient = useQueryClient();
   const [tracks, setTracks] = useState(null);
   const lengthOptions = [
-    { label: "Short game", value: "short", minTracks: 1 },
+    { label: "Short game", value: "short", minTracks: 8 },
     { label: "Mid game", value: "mid", minTracks: 15 },
     { label: "Long game", value: "long", minTracks: 30 },
   ];

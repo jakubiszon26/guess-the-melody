@@ -15,7 +15,7 @@ async function deezerGet(endpoint, data) {
     }
   } catch (error) {
     console.error("Error fetching data", error.message);
-    throw new Error(error);
+    throw error;
   }
 }
 
