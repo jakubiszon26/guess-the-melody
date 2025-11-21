@@ -1,72 +1,234 @@
-TODO: 2. implement webplayer sdk 4. use react query for state 5. use react router 6.
+# 🎵 Guess the melody — Multiplayer Music Quiz Game
 
-# Getting Started with Create React App
+## 📖 Project Description
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+**Guess the melody** is a multiplayer game inspired by Kahoot, where players must guess song titles based on 30-second music previews. One player acts as the **host**, launching the game on a larger screen and selecting a playlist, while others join using their phones, which serve as controllers.
 
-## Available Scripts
+## 🚀 Features
 
-In the project directory, you can run:
+- 🔐 Host login via Spotify (OAuth 2.0)
 
-### `npm start`
+- 🎶 Playlist selection for the game
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- 📱 Player joining via 6-digit code
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- 📲 Mobile phones as controllers
 
-### `npm test`
+- 🔊 30-second music rings from Deezer API
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- ⏱️ Round timer on the main screen
 
-### `npm run build`
+- 🥇 Scoreboard after each round
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- 🔄 Real-time updates via WebSockets (Socket.io)
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+---
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### 🔊 How does the game work?
 
-### `npm run eject`
+- The Host logs in with Spotify and selects a playlist to base the game on.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+- Music is not played directly from Spotify — instead, the app uses the **Deezer API**, verifying songs via **ISRC** codes.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+- If an ISRC code is unavailable, a text-based search (_fuzzy search_) is performed.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+- Players join the lobby using a **six-digit code**.
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+- The host's main screen displays:
 
-## Learn More
+  - A countdown timer,
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+  - Scores after each round,
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+  - Plays music
 
-### Code Splitting
+## 🧩 Technologies
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### **Frontend**
 
-### Analyzing the Bundle Size
+- **Framework**: Vite + React ![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white) ![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+- **UI Library**: Shadcn/UI (Radix UI + Tailwind CSS) ![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)
 
-### Making a Progressive Web App
+- **Real-time**: Socket.io (Client) ![Socket.io](https://img.shields.io/badge/Socket.io-black?style=for-the-badge&logo=socket.io&badgeColor=010101)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+### **Backend**
 
-### Advanced Configuration
+- **Runtime**: Node.js ![NodeJS](https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+- **Framework**: Fastify ![Fastify](https://img.shields.io/badge/fastify-%23000000.svg?style=for-the-badge&logo=fastify&logoColor=white)
 
-### Deployment
+- **Database**: MongoDB + Mongoose ![MongoDB](https://img.shields.io/badge/MongoDB-%234ea94b.svg?style=for-the-badge&logo=mongodb&logoColor=white)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+- **Cache**: Redis (for game state management) ![Redis](https://img.shields.io/badge/redis-%23DD0031.svg?style=for-the-badge&logo=redis&logoColor=white)
 
-### `npm run build` fails to minify
+- **Real-time**: Socket.io (Server) ![Socket.io](https://img.shields.io/badge/Socket.io-black?style=for-the-badge&logo=socket.io&badgeColor=010101)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+### **Integrations**
+
+- **Spotify API**: Host authentication, playlist fetching.
+
+- **Deezer API**: Fetching 30-second song previews.
+
+## 🔧 Technical Details
+
+### Architecture Overview
+
+The application follows a client-server architecture with real-time communication.
+
+- **Frontend**: Handles the UI for both the Host (Dashboard, Game Screen) and Players (Mobile Controller). It communicates with the backend via REST API for auth/data and Socket.io for game state.
+
+- **Backend**: Manages user sessions, game logic, and external API integrations.
+
+- **Redis**: Used as a fast, in-memory store for active game states (lobbies, scores, current round info) to ensure low latency.
+
+- **MongoDB**: Stores user profiles and persistent data.
+
+### Authentication Flow
+
+1.  **Initiation**: Host clicks "Login with Spotify".
+
+2.  **Redirect**: Backend redirects to Spotify Authorization URL with required scopes (`user-read-private`, `playlist-read-private`, etc.).
+
+3.  **Callback**: Spotify redirects back to `/users/getToken` with an authorization code.
+
+4.  **Token Exchange**: Backend exchanges the code for an Access Token and Refresh Token.
+
+5.  **Session**: Backend creates or updates the user in MongoDB and issues a secure HTTP-only cookie (`session_token`) containing an internal JWT.
+
+### Music Data Flow (Spotify → Deezer)
+
+To avoid Spotify's playback restrictions for games, the app uses Deezer for audio previews:
+
+1.  **Fetch**: Backend fetches tracks from the selected Spotify playlist.
+
+2.  **Match**: For each track, the `DeezerService` attempts to find a matching preview:
+
+- **Strategy A (ISRC)**: Queries Deezer API with the track's unique ISRC code (`isrc:<code`). This is the most accurate method.
+
+- **Strategy B (Fuzzy Search)**: If ISRC fails, it falls back to searching by `artist:"Name" track:"Title"`.
+
+3.  **Playback**: The resulting 30-second preview URL is sent to the frontend for playback.
+
+### 📡 Socket.io Communication
+
+The game relies heavily on event-driven communication:
+
+- `join_game`: Sent by player with a game code. Backend validates code against Redis.
+
+- `update_players`: Broadcasted to lobby when a player joins/leaves.
+
+- `host_start_game`: Triggered by host to initialize the game engine.
+
+- `game_started`: Signals all clients to switch to the game view.
+
+- `host_ready`: Host client signals it's ready to play the next track.
+
+- `player_answer`: Sent when a player selects an answer. Backend calculates points based on speed and correctness.
+
+- `host_round_ended`: Signals the end of a round to show results.
+
+## 📦 Project Structure
+
+```
+
+📂 guess-the-melody/
+
+├── 📂 backend/ # Node.js + Fastify Server
+
+│ ├── 📂 config/ # DB config
+
+│ ├── 📂 models/ # Mongoose Models
+
+│ ├── 📂 routes/ # API Routes (Auth, Music, Game)
+
+│ ├── 📂 services/ # Business Logic (Deezer, Spotify, GameEngine)
+
+│ └── backend.js # Entry point
+
+├── 📂 src/ # React Frontend
+
+│ ├── 📂 api/ # API handler functions & Socket clients
+
+│ ├── 📂 components/ # Reusable UI components
+
+│ ├── 📂 pages/ # Main application views
+
+│ └── ...
+
+└── ...
+
+```
+
+## 🛠️ How to Run Locally
+
+### Prerequisites
+
+- Node.js (v20+)
+
+- MongoDB instance
+
+- Redis instance
+
+- Spotify Developer App (Client ID & Secret)
+
+### Setup
+
+1.  **Clone the repository**
+
+```bash
+
+git clone https://github.com/jakubiszon26/guess-the-melody.git
+
+cd guess-the-melody
+
+```
+
+2.  **Install Dependencies**
+
+```bash
+
+# Install dependencies
+
+npm install
+
+```
+
+3.  **Environment Variables**
+
+Create a `.env` file in the root directory with:
+
+```env
+SPOTIFY_CLIENT_SECRET=
+SPOTIFY_CLIENT_ID=
+SPOTIFY_REDIRECT_URI=http://127.0.0.1:3000/login
+SPOTIFY_TOKEN_URI=https://accounts.spotify.com/api/token
+SPOTIFY_ENDPOINT = https://accounts.spotify.com/authorize
+ORIGIN_URL=http://127.0.0.1:3000
+BACKEND_PORT=3001
+BACKEND_HOST=localhost
+MONGO_URI=mongodb://...
+JWT_SECRET=
+REDIS_URI=redis://...
+VITE_BACKEND_URL=http://127.0.0.1:3001
+```
+
+4.  **Run the Project**
+
+```bash
+
+# Run Backend
+
+npm run dev:backend
+
+
+
+# Run Frontend (in a separate terminal)
+
+npm run dev:frontend
+
+```
+
+## 📄 License
+
+Project available under the **MIT** license.

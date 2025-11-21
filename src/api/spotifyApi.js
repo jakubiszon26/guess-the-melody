@@ -1,14 +1,14 @@
 import axios from "axios";
 
-const apiurl = "http://127.0.0.1:3001";
+const apiurl = import.meta.env.VITE_BACKEND_URL ?? "http://127.0.0.1:3001";
 
 export const getSpotifyLoginUrl = () => {
   return apiurl + "/users/get-spotify-login-url";
 };
 
 export const exchangeCodeForToken = async (code) => {
-  axios
-    .get("http://127.0.0.1:3001/users/getToken", {
+  return axios
+    .get(apiurl + "/users/getToken", {
       params: { code },
       withCredentials: true,
     })

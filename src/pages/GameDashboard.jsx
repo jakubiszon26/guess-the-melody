@@ -1,5 +1,6 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { getTracksFromPlaylist } from "../api/spotifyApi";
 import { Item, ItemContent, ItemMedia } from "@/components/ui/item";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
@@ -21,7 +22,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
+import { requestNewGame, discardGame } from "../api/gameApi";
+import { useNavigate } from "react-router-dom";
 const GameDashboard = (props) => {
   const {
     selectedPlaylist,
@@ -29,10 +31,14 @@ const GameDashboard = (props) => {
     setPlayerCount,
     gameLength = "short",
     setGameLength,
+    gameSettings,
+    gameSession,
+    gameSessionLoading,
   } = props;
+  const queryClient = useQueryClient();
   const [tracks, setTracks] = useState(null);
   const lengthOptions = [
-    { label: "Short game", value: "short", minTracks: 1 },
+    { label: "Short game", value: "short", minTracks: 8 },
     { label: "Mid game", value: "mid", minTracks: 15 },
     { label: "Long game", value: "long", minTracks: 30 },
   ];
@@ -43,8 +49,39 @@ const GameDashboard = (props) => {
       console.log(tracks);
     }
   }, [selectedPlaylist]);
+  const navigate = useNavigate();
 
   const trackCount = tracks?.items?.length ?? 0;
+
+  if (gameSessionLoading || gameSession?.gameSession) {
+    return (
+      <div className="flex w-full min-h-screen items-center justify-center p-6">
+        <Card className="w-full max-w-lg text-center">
+          <CardHeader>
+            <CardTitle>The game has already started</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Button
+              variant="outline"
+              onClick={async () => {
+                try {
+                  await discardGame();
+                  queryClient.setQueryData(["session"], undefined);
+                  await queryClient.invalidateQueries({
+                    queryKey: ["session"],
+                  });
+                } catch (error) {
+                  console.error("Failed to discard game", error);
+                }
+              }}
+            >
+              Discard game
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (selectedPlaylist) {
     return (
@@ -100,7 +137,7 @@ const GameDashboard = (props) => {
                       aria-label="Number of players"
                       value={[playerCount]}
                       min={1}
-                      max={6}
+                      max={20}
                       step={1}
                       onValueChange={(value) =>
                         setPlayerCount?.(value?.[0] ?? 1)
@@ -164,7 +201,22 @@ const GameDashboard = (props) => {
                 </div>
               </CardContent>
               <CardFooter className="justify-end">
-                <Button className="bg-emerald-500 text-white hover:bg-emerald-600">
+                <Button
+                  onClick={async () => {
+                    try {
+                      const data = await requestNewGame(gameSettings);
+                      if (data.created) {
+                        await queryClient.invalidateQueries({
+                          queryKey: ["session"],
+                        });
+                        navigate("/lobby", { replace: true });
+                      }
+                    } catch (error) {
+                      console.error("Failed to start game", error);
+                    }
+                  }}
+                  className="bg-emerald-500 text-white hover:bg-emerald-600"
+                >
                   Start Game
                 </Button>
               </CardFooter>

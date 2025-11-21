@@ -15,7 +15,49 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "./components/ui/sidebar";
+import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { useState } from "react";
+import GameLobby from "./pages/GameLobby";
+import { getSession } from "./api/gameApi";
+import JoinGamePage from "./pages/JoinGamePage";
+import HostGameScreen from "./pages/HostGameScreen";
+import PlayerGameScreen from "./pages/PlayerGameScreen";
+
+const ProtectedRoute = ({ isAllowed, redirectTo = "/login", children }) => {
+  if (!isAllowed) {
+    return <Navigate to={redirectTo} replace />;
+  }
+  return children;
+};
+
+const ProtectedLayout = ({
+  userData,
+  playingTrack,
+  userPlaylists,
+  setSelectedPlaylist,
+  gameSettings,
+}) => {
+  return (
+    <SidebarProvider>
+      <AppSidebar
+        userData={userData}
+        playingTrack={playingTrack}
+        userPlaylists={userPlaylists}
+        setSelectedPlaylist={setSelectedPlaylist}
+        gameSettings={gameSettings}
+      />
+      <SidebarInset>
+        <div className="sticky top-0 z-20 flex items-center gap-2 border-b bg-background/80 p-4 backdrop-blur md:hidden">
+          <SidebarTrigger className="md:hidden" />
+          <span className="text-sm font-semibold">Open navigation</span>
+        </div>
+        <main className="flex-1 p-4">
+          <Outlet />
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
+  );
+};
 function App() {
   const {
     data: isAuthenticated,
@@ -61,10 +103,23 @@ function App() {
       return Math.max(nextRefetch, 5000);
     },
   });
+  const { data: gameSession, isLoading: gameSessionLoading } = useQuery({
+    queryKey: ["session"],
+    queryFn: getSession,
+    enabled: !!isAuthenticated,
+  });
 
   const [selectedPlaylist, setSelectedPlaylist] = useState(null);
   const [playerCount, setPlayerCount] = useState(1);
   const [gameLength, setGameLength] = useState("short");
+  //move to local storage later
+  const [isHost, setIsHost] = useState(false);
+  const [isPlayer, setIsPlayer] = useState(false);
+  const gameSettings = {
+    selectedPlaylist: selectedPlaylist,
+    playerCount: playerCount,
+    gameLength: gameLength,
+  };
 
   if (authenticationIsLoading) {
     return <h1>loading...</h1>;
@@ -75,33 +130,91 @@ function App() {
 
   return (
     <ThemeProvider>
-      <SidebarProvider>
-        <AppSidebar
-          userData={userData}
-          playingTrack={playingTrack}
-          userPlaylists={userPlaylists}
-          setSelectedPlaylist={setSelectedPlaylist}
+      <Routes>
+        <Route
+          path="/login"
+          element={
+            isAuthenticated ? <Navigate to="/" replace /> : <LoginView />
+          }
         />
-        <SidebarInset>
-          <div className="sticky top-0 z-20 flex items-center gap-2 border-b bg-background/80 p-4 backdrop-blur md:hidden">
-            <SidebarTrigger className="md:hidden" />
-            <span className="text-sm font-semibold">Open navigation</span>
-          </div>
-          <main className="flex-1 p-4">
-            {isAuthenticated ? (
+
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute isAllowed={isAuthenticated} redirectTo="/login">
+              <ProtectedLayout
+                userData={userData}
+                playingTrack={playingTrack}
+                userPlaylists={userPlaylists}
+                setSelectedPlaylist={setSelectedPlaylist}
+                gameSettings={gameSettings}
+              />
+            </ProtectedRoute>
+          }
+        >
+          <Route
+            index
+            element={
               <GameDashboard
                 selectedPlaylist={selectedPlaylist}
                 playerCount={playerCount}
                 setPlayerCount={setPlayerCount}
                 gameLength={gameLength}
                 setGameLength={setGameLength}
+                gameSettings={gameSettings}
+                gameSession={gameSession}
+                gameSessionLoading={gameSessionLoading}
+                userData={userData}
               />
-            ) : (
-              <LoginView />
-            )}
-          </main>
-        </SidebarInset>
-      </SidebarProvider>
+            }
+          />
+        </Route>
+
+        <Route
+          path="*"
+          element={<Navigate to={isAuthenticated ? "/" : "/login"} replace />}
+        />
+        <Route
+          path="/lobby"
+          element={
+            <ProtectedRoute
+              isAllowed={
+                isAuthenticated &&
+                (gameSessionLoading || Boolean(gameSession?.gameSession))
+              }
+              redirectTo="/login"
+            >
+              <GameLobby
+                setIsHost={setIsHost}
+                isHost={isHost}
+                session={gameSession?.gameSession}
+              />
+            </ProtectedRoute>
+          }
+        ></Route>
+        <Route
+          path="/join"
+          element={
+            <JoinGamePage isPlayer={isPlayer} setIsPlayer={setIsPlayer} />
+          }
+        ></Route>
+        <Route
+          path="/gamescreen"
+          element={
+            <ProtectedRoute isAllowed={isHost} redirectTo="/">
+              <HostGameScreen gameSession={gameSession} />{" "}
+            </ProtectedRoute>
+          }
+        ></Route>
+        <Route
+          path="/playerscreen"
+          element={
+            <ProtectedRoute isAllowed={isPlayer} redirectTo="/join">
+              <PlayerGameScreen />
+            </ProtectedRoute>
+          }
+        ></Route>
+      </Routes>
     </ThemeProvider>
   );
 }

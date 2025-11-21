@@ -158,3 +158,36 @@ code {
     transform: translateX(-50%);
   }
 }
+
+.confetti-piece {
+  position: absolute;
+  top: 0;
+  width: 0.45rem;
+  height: 0.9rem;
+  border-radius: 2px;
+  opacity: 0;
+  left: calc(50% + var(--offset, 0px));
+  animation: confetti-fall 1.7s ease-in-out infinite;
+  animation-delay: var(--delay, 0ms);
+}
+
+.confetti-piece:nth-child(odd) {
+  animation-duration: 1.95s;
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-5px) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(42px) rotate(320deg);
+    opacity: 0;
+  }
+}

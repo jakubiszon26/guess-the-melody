@@ -6,9 +6,12 @@
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^11.1.0",
     "@fastify/jwt": "^10.0.0",
+    "@hookform/resolvers": "^5.2.2",
+    "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
+    "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-navigation-menu": "^1.2.14",
     "@radix-ui/react-scroll-area": "^1.2.10",
     "@radix-ui/react-separator": "^1.1.8",
@@ -29,18 +32,26 @@
     "mongoose": "^8.19.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-hook-form": "^7.66.1",
     "react-icons": "^5.5.0",
+    "react-router-dom": "^7.9.6",
+    "redis": "^5.9.0",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "spotify-preview-finder": "^2.1.0",
+    "string-similarity": "^4.0.4",
     "tailwind-merge": "^3.4.0",
     "tslib": "^2.8.1",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "zod": "^4.1.12"
   },
   "scripts": {
     "dev:frontend": "vite",
     "dev:backend": "nodemon backend/backend.js",
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:backend": "esbuild backend/backend.js --bundle --platform=node --format=esm --target=node22 --outfile=server.mjs --banner:js=\"import { createRequire } from 'module'; const require = createRequire(import.meta.url);\""
   },
   "eslintConfig": {
     "extends": [
@@ -66,6 +77,7 @@
     "@types/react": "^19.2.5",
     "@vitejs/plugin-react": "^5.1.1",
     "concurrently": "^9.2.1",
+    "esbuild": "^0.27.0",
     "nodemon": "^3.1.11",
     "tailwindcss": "^4.1.17",
     "tw-animate-css": "^1.4.0",

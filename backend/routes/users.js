@@ -21,9 +21,10 @@ async function userRoutes(fastify, options) {
       "user-read-playback-state",
       "user-modify-playback-state",
       "user-read-currently-playing",
-      "streaming",
       "user-read-email",
       "user-read-private",
+      "playlist-read-private",
+      "playlist-read-collaborative",
     ];
     const loginUrl = `${process.env.SPOTIFY_ENDPOINT}?client_id=${
       process.env.SPOTIFY_CLIENT_ID
@@ -58,6 +59,7 @@ async function userRoutes(fastify, options) {
         );
         const internalToken = await generateInternalToken(fastify, updatedUser);
         reply.setCookie("session_token", internalToken, cookieSettings);
+        reply.send({ login: "success" });
       } else {
         const newUSer = await databaseCreateUser(
           userID,
@@ -67,6 +69,7 @@ async function userRoutes(fastify, options) {
         );
         const internalToken = await generateInternalToken(fastify, newUSer);
         reply.setCookie("session_token", internalToken, cookieSettings);
+        reply.send({ login: "success" });
       }
     } catch (error) {
       throw new Error(error);

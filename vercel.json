@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/socket.io/(.*)",
+      "destination": "http://frog03.mikr.us:20992/socket.io/$1"
+    },
+    {
+      "source": "/api/:match*",
+      "destination": "http://frog03.mikr.us:20992/:match*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
