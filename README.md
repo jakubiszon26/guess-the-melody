@@ -1,5 +1,13 @@
 # 🎵 Guess the melody — Multiplayer Music Quiz Game
 
+> ⚠️ **Warning**
+>
+> Due to recent changes in Spotify's API policies (restricted access to extended API features), logging into the Vercel-hosted instance is currently restricted to whitelisted users.
+>
+> If you wish to test the application without running it locally, please **contact me** so I can add your email to the allowlist in the Spotify Developer Dashboard.
+>
+> _I am currently working on a public demo mode that will not require Spotify login._
+
 ## 📖 Project Description
 
 **Guess the melody** is a multiplayer game inspired by Kahoot, where players must guess song titles based on 30-second music previews. One player acts as the **host**, launching the game on a larger screen and selecting a playlist, while others join using their phones, which serve as controllers.
