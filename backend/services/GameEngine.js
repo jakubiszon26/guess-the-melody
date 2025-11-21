@@ -10,7 +10,7 @@ export async function hydrateGameObject(fastify, gameID) {
 
     const plainObject = JSON.parse(rawData);
     const gameState = new GameState(null, {
-      gameLenght: 0,
+      gameLength: 0,
       gamePlayers: 0,
       tracksArray: [],
       hostSpotifyID: "",
@@ -106,7 +106,6 @@ export async function handleRoundEnd(fastify, gameID) {
       const timeDifference = roundEndDateNow - playerAnswers[id].answerDateTime;
       score = Math.floor((timeDifference / ROUND_DURATION) * MAX_POINTS);
       score = Math.max(0, Math.min(score, MAX_POINTS));
-      score = (roundEndDateNow - playerAnswers[id].answerDateTime) / 100;
     }
     console.log(
       "clean player: ",

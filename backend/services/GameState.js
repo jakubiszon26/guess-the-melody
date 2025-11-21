@@ -4,7 +4,7 @@ export class GameState {
     this.gameStarted = false;
     this.gameID = `game:${spotifyID}`;
     this.hostSpotifyID = spotifyID;
-    this.gameLength = gameSettings.gameLenght;
+    this.gameLength = gameSettings.gameLength;
     this.maxPlayerCount = gameSettings.gamePlayers;
     this.tracksArray = gameSettings.tracksArray;
     this.playedTracks = []; //indeksy z trackArray.

@@ -1,4 +1,4 @@
-import { defineConfig, loadEnv } from "vite";
+import { defineConfig } from "vite";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => {
               console.log("proxy error", err);
             });
             proxy.on("proxyReq", (proxyReq, req, _res) => {
-              console.log("Request do backendu:", req.method, req.url);
+              console.log("Backend request", req.method, req.url);
             });
           },
         },

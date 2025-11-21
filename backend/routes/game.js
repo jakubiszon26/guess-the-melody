@@ -12,7 +12,7 @@ async function gameRoutes(fastify, options) {
         const token = await getSpotifyTokenFromDatabase(spotifyID);
         const gameSettings = request.body.gameSettings;
         if (spotifyID && gameSettings) {
-          //game settings to tylko selectedPlaylist, playerCount i gameLenght
+          //game settings to tylko selectedPlaylist, playerCount i gameLength
           //bede musial pobrac piosenki, ktore chce grac. Najlepiej miec je w formie tracksArray
           const trackIDs = await Spotify.getTrackIDsFromPlaylist(
             token,
@@ -27,7 +27,7 @@ async function gameRoutes(fastify, options) {
           const finalGameSettings = {
             selectedPlaylist: gameSettings.selectedPlaylist,
             playerCount: gameSettings.playerCount,
-            gameLenght: gameSettings.gameLength,
+            gameLength: gameSettings.gameLength,
             tracksArray: tracksArray,
           };
 

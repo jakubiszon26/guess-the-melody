@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef } from "react";
 import { socket } from "../api/socket";
 import { useNavigate } from "react-router-dom";
 import HostAnswersScreen from "../components/HostScreenStates/HostAnswersScreen";
@@ -11,7 +11,6 @@ const ANSWERS_DURATION_MS = 10000;
 const HostGameScreen = (props) => {
   const hasEmitted = useRef(false);
   const audioPlayer = useRef(new Audio());
-  const [roundData, setRoundData] = useState(null);
   const [screenState, setScreenState] = useState("");
   const [lastPlayed, setLastPlayed] = useState(null);
   const [scores, setScores] = useState(null);
@@ -36,7 +35,6 @@ const HostGameScreen = (props) => {
   useEffect(() => {
     const handleStartRound = (data) => {
       setScreenState(data.screenState);
-      setRoundData(data);
       setTimeLeftMs(data.roundDurationMs ?? ROUND_DURATION_MS);
       setIsTimerRunning(false);
 
@@ -69,7 +67,6 @@ const HostGameScreen = (props) => {
     const handleFinish = (data) => {
       setScores(data?.scores ?? null);
       setScreenState("finish");
-      setRoundData(null);
       setLastPlayed(null);
       setIsTimerRunning(false);
       setIsAnswersTimerRunning(false);

@@ -6,7 +6,6 @@ import {
   startGameEngine,
   handlePlayerAnswer,
 } from "./GameEngine.js";
-import { SocketTimeoutDuringMaintenanceError } from "redis";
 
 export function setupSocketLogic(fastify) {
   fastify.io.on("connection", (socket) => {
@@ -19,7 +18,7 @@ export function setupSocketLogic(fastify) {
             if (rawData) {
               const plainObject = JSON.parse(rawData);
               const gameState = new GameState(null, {
-                gameLenght: 0,
+                gameLength: 0,
                 gamePlayers: 0,
                 tracksArray: [],
               });

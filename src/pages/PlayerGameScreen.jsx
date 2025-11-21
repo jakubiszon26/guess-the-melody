@@ -46,15 +46,24 @@ const PlayerGameScreen = () => {
   };
 
   useEffect(() => {
-    socket.on("player_round_start", (data) => {
+    const handlePlayerRoundStart = (data) => {
       console.log("Round has started");
       setGameScreen(data.screenState);
       setGameData(data);
-    });
-    socket.on("answers", (data) => {
+    };
+
+    const handleAnswers = () => {
       setGameScreen("answers");
-    });
-  });
+    };
+
+    socket.on("player_round_start", handlePlayerRoundStart);
+    socket.on("answers", handleAnswers);
+
+    return () => {
+      socket.off("player_round_start", handlePlayerRoundStart);
+      socket.off("answers", handleAnswers);
+    };
+  }, []);
 
   if (gameScreen === "guessing")
     return (
@@ -113,6 +122,7 @@ const PlayerGameScreen = () => {
       </div>
     );
   }
+  return <p>Game will start in a moment</p>;
 };
 
 export default PlayerGameScreen;

@@ -88,21 +88,7 @@ const GameLobby = (props) => {
             {players?.map((p) => {
               return (
                 <Item key={p.id} variant="outline" className="m-0.5">
-                  {/* <ItemMedia>
-                  <Avatar variant="square">
-                    <AvatarImage src={p.images[0].url} />
-                  </Avatar>
-                </ItemMedia> */}
                   <ItemContent> {p.name}</ItemContent>
-                  <ItemActions>
-                    <Button
-                      onClick={() => setSelectedPlaylist(p)}
-                      variant="outline"
-                      size="icon"
-                    >
-                      Kick{" "}
-                    </Button>
-                  </ItemActions>
                 </Item>
               );
             })}

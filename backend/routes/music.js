@@ -143,7 +143,7 @@ export default async function musicRoutes(fastify, options) {
         }
 
         if (index < 0 || index >= tracksArray.length) {
-          return reply.status(400).send({ error: "index over array lenght" });
+          return reply.status(400).send({ error: "index over array length" });
         }
 
         const preview = await Deezer.getTrackPreview(tracksArray, index);

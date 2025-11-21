@@ -34,7 +34,6 @@ const GameDashboard = (props) => {
     gameSettings,
     gameSession,
     gameSessionLoading,
-    userData,
   } = props;
   const queryClient = useQueryClient();
   const [tracks, setTracks] = useState(null);
@@ -62,12 +61,6 @@ const GameDashboard = (props) => {
             <CardTitle>The game has already started</CardTitle>
           </CardHeader>
           <CardContent>
-            {/* <Button
-              variant="outline"
-              onClick={() => navigate("/lobby", { replace: true })}
-            >
-              Return to the game
-            </Button> */}
             <Button
               variant="outline"
               onClick={async () => {
