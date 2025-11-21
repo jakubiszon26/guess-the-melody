@@ -12,6 +12,11 @@
 
 **Guess the melody** is a multiplayer game inspired by Kahoot, where players must guess song titles based on 30-second music previews. One player acts as the **host**, launching the game on a larger screen and selecting a playlist, while others join using their phones, which serve as controllers.
 
+
+https://github.com/user-attachments/assets/741c6daa-10a6-40e7-b8dc-74463fa66162
+
+
+
 ## 🚀 Features
 
 - 🔐 Host login via Spotify (OAuth 2.0)
