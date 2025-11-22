@@ -50,6 +50,7 @@ const PlayerGameScreen = () => {
       console.log("Round has started");
       setGameScreen(data.screenState);
       setGameData(data);
+      form.reset();
     };
 
     const handleAnswers = () => {
