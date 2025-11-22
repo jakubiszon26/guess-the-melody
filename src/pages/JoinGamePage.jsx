@@ -18,6 +18,7 @@ import {
   CardTitle,
   CardDescription,
   CardContent,
+  CardFooter,
 } from "@/components/ui/card";
 
 import { socket } from "../api/socket";
@@ -44,6 +45,7 @@ const formSchema = z.object({
 const JoinGameForm = (props) => {
   const { isPlayer, setIsPlayer } = props;
   const [gameStarted, setGameStarted] = useState(false);
+  const [canRejoin, setCanRejoin] = useState(false);
 
   const navigate = useNavigate();
 
@@ -54,10 +56,38 @@ const JoinGameForm = (props) => {
       username: "",
     },
   });
+  const handleRejoin = () => {
+    if (!socket.connected) {
+      socket.connect();
+    }
+    socket.emit(
+      "re_join_game",
+      localStorage.getItem("socketID"),
+      localStorage.getItem("gameCode"),
+      (response) => {
+        if (response.success === true) {
+          localStorage.removeItem("socketID");
+          localStorage.setItem("socketID", socket.id);
+          setGameStarted(true);
+          setIsPlayer(true);
+          navigate("/playerscreen", { replace: true });
+        } else {
+          form.setError("gameCode", {
+            type: "manual",
+            message: response.error,
+          });
+          localStorage.removeItem("gameID");
+          localStorage.removeItem("socketID");
+          setCanRejoin(false);
+        }
+      }
+    );
+  };
 
   const onSubmit = (values) => {
-    if (!socket.connected) socket.connect();
-
+    if (!socket.connected) {
+      socket.connect();
+    }
     console.log("Wysyłanie:", values);
     socket.emit("join_game", values.gameCode, values.username, (response) => {
       if (response.success === false) {
@@ -67,8 +97,21 @@ const JoinGameForm = (props) => {
         });
       }
       setIsPlayer(response.success);
+      if (response.success) {
+        localStorage.setItem("socketID", socket.id);
+        localStorage.setItem("gameCode", values.gameCode);
+      }
     });
   };
+
+  useEffect(() => {
+    const savedGameCode = localStorage.getItem("gameCode");
+    const savedID = localStorage.getItem("socketID");
+
+    if (savedGameCode && savedID) {
+      setCanRejoin(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (!isPlayer) {
@@ -78,7 +121,6 @@ const JoinGameForm = (props) => {
     const handleGameStarted = (data) => {
       setGameStarted(data);
     };
-
     socket.on("game_started", handleGameStarted);
 
     return () => {
@@ -154,6 +196,18 @@ const JoinGameForm = (props) => {
             </form>
           </Form>
         </CardContent>
+        {canRejoin ? (
+          <CardFooter>
+            <Button
+              onClick={handleRejoin}
+              className="w-full bg-green-400 text-white"
+            >
+              Re-join the game
+            </Button>
+          </CardFooter>
+        ) : (
+          ""
+        )}
       </Card>
     </div>
   );
