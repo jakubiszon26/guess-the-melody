@@ -1,0 +1,43 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    container_name: guess-the-melody-app
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/guess-the-melody
+      - REDIS_URI=redis://redis:6379
+
+      - PORT=3001
+      - BACKEND_HOST=0.0.0.0
+      - JWT_SECRET=${JWT_SECRET}
+      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
+      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
+      - SPOTIFY_REDIRECT_URI=${SPOTIFY_REDIRECT_URI}
+      - SPOTIFY_ENDPOINT=${SPOTIFY_ENDPOINT}
+      - SPOTIFY_TOKEN_URI=${SPOTIFY_TOKEN_URI}
+      - ORIGIN_URL=${ORIGIN_URL}
+      - VITE_BACKEND_URL=${VITE_BACKEND_URL}
+    depends_on:
+      - mongo
+      - redis
+    volumes:
+      - .:/app
+      - /app/node_modules
+  redis:
+    image: redis:alpine
+    container_name: game-redis
+    ports:
+      - "6379:6379"
+  mongo:
+    image: mongo:latest
+    container_name: game-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+volumes:
+  mongo_data:
