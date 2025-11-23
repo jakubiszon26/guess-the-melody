@@ -31,6 +31,44 @@ const PlayerGameScreen = () => {
   const [gameScreen, setGameScreen] = useState("");
   const [gameData, setGameData] = useState(null);
 
+  useEffect(() => {
+    const checkAndRejoin = () => {
+      const savedID = localStorage.getItem("socketID");
+      const gameCode = localStorage.getItem("gameCode");
+      const activeID = socket.id;
+
+      if (!savedID) return;
+
+      if (!socket.connected || savedID !== activeID) {
+        if (!socket.connected) {
+          socket.connect();
+        }
+
+        const handleRejoin = () => {
+          socket.emit("re_join_game", savedID, gameCode, (response) => {
+            if (response.success === true) {
+              localStorage.setItem("socketID", socket.id);
+            }
+          });
+        };
+
+        if (socket.connected) {
+          handleRejoin();
+        } else {
+          socket.once("connect", handleRejoin);
+        }
+      }
+    };
+
+    checkAndRejoin();
+    window.addEventListener("focus", checkAndRejoin);
+
+    return () => {
+      window.removeEventListener("focus", checkAndRejoin);
+      socket.off("connect");
+    };
+  }, []);
+
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -123,7 +161,22 @@ const PlayerGameScreen = () => {
       </div>
     );
   }
-  return <p>Game will start in a moment</p>;
+  return (
+    <div className="flex w-full min-h-screen items-center justify-center p-6">
+      <Card className="w-full max-w-lg text-center">
+        <CardHeader>
+          <CardTitle>
+            You will join the game when the next round starts
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Please wait for the next round to begin.
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
 };
 
 export default PlayerGameScreen;
