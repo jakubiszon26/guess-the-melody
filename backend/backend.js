@@ -20,7 +20,7 @@ const fastify = Fastify({ logger: true, trustProxy: true });
 await fastify.register(fastifyCookie);
 
 fastify.register(cors, {
-  origin: [process.env.ORIGIN_URL, "http://127.0.0.1:3000", "localhost:3000"],
+  origin: [process.env.ORIGIN_URL, "http://127.0.0.1:3000", "http://localhost:3000"],
   credentials: true,
 });
 

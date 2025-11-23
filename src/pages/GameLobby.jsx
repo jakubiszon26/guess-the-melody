@@ -72,11 +72,13 @@ const GameLobby = (props) => {
             </h1>
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Go to https://guess-the-melody-zeta.vercel.app/join and enter the
-            code
+        <CardContent className="flex flex-col items-center gap-2">
+          <p className="text-md">
+            Go to https://guess-the-melody-zeta.vercel.app/join 
           </p>
+          <span className="text-muted-foreground">Or scan the QR code</span>
+          <img className=" text-center" src="public/qr.png" />
+
         </CardContent>
       </Card>
       <Card className="w-full max-w-lg text-center ml-5">
