@@ -176,6 +176,9 @@ The game relies heavily on event-driven communication:
 You can run the entire stack (App + Redis + MongoDB) using Docker Compose.
 ### Prerequesities
 - Spotify Developer App (Client ID & Secret)
+(Make sure you set redirect url in the spotify app dashboard.
+```http://127.0.0.1:3000/login```)
+
 ### Setup
 1. **Create ```.env``` file in the root directory with these required variables:**
 ```env
