@@ -1,6 +1,6 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useEffect, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { getTracksFromPlaylist } from "../api/spotifyApi";
 import { Item, ItemContent, ItemMedia } from "@/components/ui/item";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/card";
 import { requestNewGame, discardGame } from "../api/gameApi";
 import { useNavigate } from "react-router-dom";
+import TracksItems from "../components/TracksItems";
 const GameDashboard = (props) => {
   const {
     selectedPlaylist,
@@ -36,19 +37,32 @@ const GameDashboard = (props) => {
     gameSessionLoading,
   } = props;
   const queryClient = useQueryClient();
-  const [tracks, setTracks] = useState(null);
   const lengthOptions = [
     { label: "Short game", value: "short", minTracks: 8 },
     { label: "Mid game", value: "mid", minTracks: 15 },
     { label: "Long game", value: "long", minTracks: 30 },
   ];
 
-  useEffect(() => {
+  const getTracks = async () => {
     if (selectedPlaylist) {
-      getTracksFromPlaylist(selectedPlaylist).then((data) => setTracks(data));
-      console.log(tracks);
+      const data = await getTracksFromPlaylist(selectedPlaylist);
+      console.log(data);
+      return data;
+    } else {
+      console.log("returning null");
+      return null;
     }
-  }, [selectedPlaylist]);
+  };
+
+  const {
+    data: tracks,
+    error: tracksError,
+    isLoading: tracksIsLoading,
+  } = useQuery({
+    queryKey: ["tracks", selectedPlaylist],
+    queryFn: getTracks,
+  });
+
   const navigate = useNavigate();
 
   const trackCount = tracks?.items?.length ?? 0;
@@ -95,18 +109,7 @@ const GameDashboard = (props) => {
               </p>
             </div>
             <ScrollArea className="h-[60vh] w-full rounded-xl border bg-card/40 md:h-[80vh]">
-              <div className="space-y-3 p-3">
-                {tracks?.items.map((p) => (
-                  <Item key={p.track.id} variant="outline" className="m-0">
-                    <ItemMedia>
-                      <Avatar variant="square">
-                        <AvatarImage src={p.track.album.images[0]?.url} />
-                      </Avatar>
-                    </ItemMedia>
-                    <ItemContent>{p.track.name}</ItemContent>
-                  </Item>
-                ))}
-              </div>
+              <TracksItems tracks={tracks} tracksIsLoading={tracksIsLoading} />
             </ScrollArea>
           </section>
 
