@@ -17,6 +17,8 @@ import { useQuery } from "@tanstack/react-query";
 import { socket } from "../api/socket";
 import { useNavigate } from "react-router-dom";
 
+import qr from "@/assets/qr.png";
+
 const GameLobby = (props) => {
   const { setIsHost } = props;
   const {
@@ -74,11 +76,10 @@ const GameLobby = (props) => {
         </CardHeader>
         <CardContent className="flex flex-col items-center gap-2">
           <p className="text-md">
-            Go to https://guess-the-melody-zeta.vercel.app/join 
+            Go to https://guess-the-melody-zeta.vercel.app/join
           </p>
           <span className="text-muted-foreground">Or scan the QR code</span>
-          <img className=" text-center" src="public/qr.png" />
-
+          <img className=" text-center" src={qr} alt="qr-code-image" />
         </CardContent>
       </Card>
       <Card className="w-full max-w-lg text-center ml-5">
