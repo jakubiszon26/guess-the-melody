@@ -35,6 +35,7 @@ const GameDashboard = (props) => {
     gameSettings,
     gameSession,
     gameSessionLoading,
+    setGameMode,
   } = props;
   const queryClient = useQueryClient();
   const lengthOptions = [
@@ -201,6 +202,35 @@ const GameDashboard = (props) => {
                       ));
                     })()}
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Game Mode</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant={
+                        gameSettings?.gameMode === "title"
+                          ? "default"
+                          : "outline"
+                      }
+                      onClick={() => setGameMode("title")}
+                    >
+                      Guess Title
+                    </Button>
+                    <Button
+                      variant={
+                        gameSettings?.gameMode === "artist"
+                          ? "default"
+                          : "outline"
+                      }
+                      onClick={() => setGameMode("artist")}
+                    >
+                      Guess Artist
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Choose what players need to guess.
+                  </p>
                 </div>
               </CardContent>
               <CardFooter className="justify-end">

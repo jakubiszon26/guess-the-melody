@@ -112,6 +112,7 @@ function App() {
   const [selectedPlaylist, setSelectedPlaylist] = useState(null);
   const [playerCount, setPlayerCount] = useState(1);
   const [gameLength, setGameLength] = useState("short");
+  const [gameMode, setGameMode] = useState("title");
   //move to local storage later
   const [isHost, setIsHost] = useState(false);
   const [isPlayer, setIsPlayer] = useState(false);
@@ -119,6 +120,7 @@ function App() {
     selectedPlaylist: selectedPlaylist,
     playerCount: playerCount,
     gameLength: gameLength,
+    gameMode: gameMode,
   };
 
   if (authenticationIsLoading) {
@@ -165,6 +167,7 @@ function App() {
                 gameSession={gameSession}
                 gameSessionLoading={gameSessionLoading}
                 userData={userData}
+                setGameMode={setGameMode}
               />
             }
           />

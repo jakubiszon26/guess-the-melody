@@ -1,6 +1,7 @@
 export class GameState {
   constructor(spotifyID, gameSettings) {
     this.hostID, this.gameCode;
+    this.gameMode = gameSettings.gameMode;
     this.gameStarted = false;
     this.gameID = `game:${spotifyID}`;
     this.hostSpotifyID = spotifyID;

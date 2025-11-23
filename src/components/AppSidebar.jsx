@@ -33,7 +33,7 @@ export function AppSidebar(props) {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Your playlists</SidebarGroupLabel>
-          <ScrollArea className="h-72 w-full rounded-md border">
+          <ScrollArea className="h-[calc(100vh-16rem)] w-full rounded-md border">
             {userPlaylists?.items.map((p) => {
               return (
                 <Item key={p.id} variant="outline" className="m-0.5">

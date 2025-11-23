@@ -95,14 +95,18 @@ export async function handleRoundEnd(fastify, gameID) {
     gameState.playedTracks[gameState.playedTracks.length - 1];
   const lastPlayedObject = gameState.tracksArray[lastPlayedIndex];
   const cleanTitle = cleanString(lastPlayedObject.title);
+  const cleanArtist = cleanString(lastPlayedObject.artist);
   const playerAnswers = gameState.playerAnswers;
   const playerIDs = Object.keys(gameState.playerAnswers);
   playerIDs.map((id) => {
     const cleanPlayer = cleanString(playerAnswers[id].playerAnswer);
-    const similarity = stringSimilarity.compareTwoStrings(
-      cleanTitle,
-      cleanPlayer
-    );
+    let similarity;
+    if (gameState.gameMode === "artist") {
+      similarity = stringSimilarity.compareTwoStrings(cleanArtist, cleanPlayer);
+    } else {
+      similarity = stringSimilarity.compareTwoStrings(cleanTitle, cleanPlayer);
+    }
+
     let score = 0;
     if (similarity >= 0.8) {
       const MAX_POINTS = 1000;

@@ -34,6 +34,7 @@ async function gameRoutes(fastify, options) {
             playerCount: gameSettings.playerCount,
             gameLength: gameSettings.gameLength,
             tracksArray: tracksArray,
+            gameMode: gameSettings.gameMode,
           };
 
           const gameState = new GameState(spotifyID, finalGameSettings);
