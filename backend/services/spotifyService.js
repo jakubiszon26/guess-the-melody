@@ -83,13 +83,33 @@ const Spotify = {
   },
   async playlistTracks(token, playlistID) {
     try {
-      const response = await spotifyGet(
-        token,
-        `https://api.spotify.com/v1/playlists/${playlistID}/tracks`
-      );
-      if (response.data) {
-        return response.data;
+      let allItems = [];
+      let url = `https://api.spotify.com/v1/playlists/${playlistID}/tracks`;
+      let firstResponseData = null;
+
+      while (url) {
+        const response = await spotifyGet(token, url);
+        if (response.data) {
+          if (!firstResponseData) {
+            firstResponseData = response.data;
+          }
+          if (response.data.items) {
+            allItems = [...allItems, ...response.data.items];
+          }
+          url = response.data.next;
+        } else {
+          url = null;
+        }
       }
+
+      if (firstResponseData) {
+        return {
+          ...firstResponseData,
+          items: allItems,
+          next: null,
+        };
+      }
+      return null;
     } catch (error) {
       console.error("Error fetching playlists tracks data", error);
       throw new Error(error);
@@ -138,24 +158,28 @@ const Spotify = {
   },
   async getTrackIDsFromPlaylist(token, playlistID) {
     try {
-      const response = await spotifyGet(
-        token,
-        `https://api.spotify.com/v1/playlists/${playlistID}/tracks`
-      );
+      let allTrackIDs = [];
+      let url = `https://api.spotify.com/v1/playlists/${playlistID}/tracks`;
 
-      if (response.data && response.data.items) {
-        const trackIDs = response.data.items
-          .map((item) => {
-            if (item.track && item.track.id) {
-              return item.track.id;
-            }
-            return null;
-          })
-          .filter((id) => id !== null);
+      while (url) {
+        const response = await spotifyGet(token, url);
 
-        return trackIDs;
+        if (response.data && response.data.items) {
+          const trackIDs = response.data.items
+            .map((item) => {
+              if (item.track && item.track.id) {
+                return item.track.id;
+              }
+              return null;
+            })
+            .filter((id) => id !== null);
+
+          allTrackIDs = [...allTrackIDs, ...trackIDs];
+        }
+        url = response.data.next;
       }
-      return [];
+
+      return allTrackIDs;
     } catch (error) {
       console.error("Error ", error);
       throw error;
