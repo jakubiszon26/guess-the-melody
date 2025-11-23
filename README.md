@@ -172,6 +172,36 @@ The game relies heavily on event-driven communication:
 
 ```
 
+## 🐳Run using Docker
+You can run the entire stack (App + Redis + MongoDB) using Docker Compose.
+### Prerequesities
+- Spotify Developer App (Client ID & Secret)
+### Setup
+1. **Create ```.env``` file in the root directory with these required variables:**
+```env
+# App URLs
+ORIGIN_URL=[http://127.0.0.1:3000](http://127.0.0.1:3000)
+VITE_BACKEND_URL=[http://127.0.0.1:3001](http://127.0.0.1:3001)
+
+# Auth
+JWT_SECRET=your_super_secret_key
+
+# Spotify API
+SPOTIFY_CLIENT_ID=your_id
+SPOTIFY_CLIENT_SECRET=your_secret
+SPOTIFY_REDIRECT_URI=[http://127.0.0.1:3000/login](http://127.0.0.1:3000/login)
+SPOTIFY_ENDPOINT=[https://accounts.spotify.com/authorize](https://accounts.spotify.com/authorize)
+SPOTIFY_TOKEN_URI=[https://accounts.spotify.com/api/token](https://accounts.spotify.com/api/token)
+```
+(Note: DB connection strings are handled automatically by Docker Compose)
+<br /><br />
+
+2.  **Run the App**
+   
+```
+docker-compose up --build
+```
+
 ## 🛠️ How to Run Locally
 
 ### Prerequisites
