@@ -29,6 +29,7 @@ const formSchema = z.object({
 
 const PlayerGameScreen = () => {
   const [gameScreen, setGameScreen] = useState("");
+  const [gameMode, setGameMode] = useState("title");
   const [gameData, setGameData] = useState(null);
 
   useEffect(() => {
@@ -87,6 +88,7 @@ const PlayerGameScreen = () => {
     const handlePlayerRoundStart = (data) => {
       console.log("Round has started");
       setGameScreen(data.screenState);
+      setGameMode(data.gameMode);
       setGameData(data);
       form.reset();
     };
@@ -129,7 +131,14 @@ const PlayerGameScreen = () => {
                     <FormItem>
                       <FormLabel>Your answer</FormLabel>
                       <FormControl>
-                        <Input placeholder="Song title..." {...field} />
+                        <Input
+                          placeholder={
+                            gameMode === "artist"
+                              ? "Song artist..."
+                              : "Song title..."
+                          }
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

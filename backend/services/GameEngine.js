@@ -78,6 +78,7 @@ export async function startGameEngine(fastify, gameID) {
       round: gameState.currentRound,
       gameID: gameID,
       screenState: screenState,
+      gameMode: gameState.gameMode,
     });
   } catch (error) {
     console.error(error);
