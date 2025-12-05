@@ -17,10 +17,13 @@ import { useQuery } from "@tanstack/react-query";
 import { socket } from "../api/socket";
 import { useNavigate } from "react-router-dom";
 
-import qr from "@/assets/qr.png";
-
+import QRCode from "react-qr-code";
 const GameLobby = (props) => {
   const { setIsHost } = props;
+
+  const qrurl =
+    window.location.href.replace(window.location.pathname, "") + "/join";
+
   const {
     data: gameCode,
     error: gameCodeError,
@@ -49,7 +52,6 @@ const GameLobby = (props) => {
     socket.on("game_started", (res) => {
       setGameStarted(res);
     });
-
     return () => {
       socket.off("update_players");
     };
@@ -75,11 +77,16 @@ const GameLobby = (props) => {
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col items-center gap-2">
-          <p className="text-md">
-            Go to https://guess-the-melody-zeta.vercel.app/join
-          </p>
+          <p className="text-md">Go to {qrurl}</p>
           <span className="text-muted-foreground">Or scan the QR code</span>
-          <img className=" text-center" src={qr} alt="qr-code-image" />
+          <div className="bg-white p-3">
+            <QRCode
+              size={256}
+              value={qrurl}
+              viewBox={`0 0 256 256`}
+              style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+            />
+          </div>
         </CardContent>
       </Card>
       <Card className="w-full max-w-lg text-center ml-5">
