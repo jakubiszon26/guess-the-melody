@@ -185,17 +185,18 @@ const GameDashboard = (props) => {
                         messages.push(
                           "Load playlist tracks to choose a game length."
                         );
-                      } else {
-                        if (trackCount < 15) {
-                          messages.push(
-                            "Need at least 15 tracks to enable Mid game."
-                          );
-                        }
-                        if (trackCount < 30) {
-                          messages.push(
-                            "Need at least 30 tracks to enable Long game."
-                          );
-                        }
+                      } else if (trackCount < 8) {
+                        messages.push(
+                          "Need at least 8 tracks to enable Short game."
+                        );
+                      } else if (trackCount < 15) {
+                        messages.push(
+                          "Need at least 15 tracks to enable Mid game."
+                        );
+                      } else if (trackCount < 30) {
+                        messages.push(
+                          "Need at least 30 tracks to enable Long game."
+                        );
                       }
                       return messages.map((message) => (
                         <p key={message}>{message}</p>
@@ -235,6 +236,7 @@ const GameDashboard = (props) => {
               </CardContent>
               <CardFooter className="justify-end">
                 <Button
+                  disabled={trackCount < 8}
                   onClick={async () => {
                     try {
                       const data = await requestNewGame(gameSettings);
