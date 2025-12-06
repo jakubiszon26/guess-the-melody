@@ -39,7 +39,7 @@ export function AppSidebar(props) {
                 <Item key={p.id} variant="outline" className="m-0.5">
                   <ItemMedia>
                     <Avatar variant="square">
-                      <AvatarImage src={p.images[0].url} />
+                      <AvatarImage src={p.images[0]?.url} />
                     </Avatar>
                   </ItemMedia>
                   <ItemContent> {p.name}</ItemContent>

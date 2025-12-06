@@ -20,7 +20,7 @@ const UserItem = (props) => {
     >
       <ItemMedia>
         <Avatar>
-          <AvatarImage src={userData?.images[0].url} />
+          <AvatarImage src={userData?.images[0]?.url} />
         </Avatar>
       </ItemMedia>
       <ItemContent>
