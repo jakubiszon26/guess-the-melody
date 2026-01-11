@@ -71,8 +71,8 @@ const GameLobby = (props) => {
           <CardTitle>Join the game</CardTitle>
           <CardDescription>
             Game code:{" "}
-            <h1 className=" text-white scroll-m-20 text-center text-4xl font-extrabold tracking-tight text-balance">
-              {gameCode}
+            <h1 className="scroll-m-20 text-center text-4xl font-extrabold tracking-tight text-balance">
+            {gameCode}
             </h1>
           </CardDescription>
         </CardHeader>
