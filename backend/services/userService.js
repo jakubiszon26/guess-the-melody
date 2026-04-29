@@ -15,7 +15,7 @@ async function databaseUpdateTokens(
   spotifyID,
   access_token,
   refresh_token,
-  expires_in
+  expires_in,
 ) {
   const expiresAt = new Date(Date.now() + expires_in * 1000);
   const updateData = {
@@ -29,11 +29,11 @@ async function databaseUpdateTokens(
     const updatedUser = await User.findOneAndUpdate(
       { spotifyID: spotifyID },
       { $set: updateData },
-      { new: true }
+      { new: true },
     );
     if (!updatedUser) {
       console.warn(
-        `Próbowano zaktualizować tokeny, ale nie znaleziono usera: ${spotifyID}`
+        `Próbowano zaktualizować tokeny, ale nie znaleziono usera: ${spotifyID}`,
       );
       return null;
     }
@@ -47,7 +47,7 @@ async function databaseCreateUser(
   spotifyID,
   access_token,
   refresh_token,
-  expires_in
+  expires_in,
 ) {
   const expiresAt = new Date(Date.now() + expires_in * 1000);
   const spotifyUserData = await Spotify.me(access_token);
@@ -110,13 +110,13 @@ async function getSpotifyTokenFromDatabase(spotifyID) {
       return spotifyToken.token;
     } else {
       const refreshedToken = await Spotify.refreshToken(
-        spotifyToken.refreshToken
+        spotifyToken.refreshToken,
       );
-      databaseUpdateTokens(
+      await databaseUpdateTokens(
         spotifyID,
         refreshedToken.access_token,
         refreshedToken.refresh_token,
-        refreshedToken.expires_in
+        refreshedToken.expires_in,
       );
       return refreshedToken.access_token;
     }
